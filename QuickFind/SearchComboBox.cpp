@@ -105,7 +105,7 @@ void CSearchComboBoxEdit::InitImages()
 	UINT nFlags = ILC_MASK | ILC_COLOR32;
 	m_ImageBrowse.Create(m_sizeImage.cx, m_sizeImage.cy, nFlags, 0, 0);
 
-	m_ImageBrowse.Add(AfxGetApp()->LoadIcon(IDR_QUICKFIND_CLEAR));
+	m_ImageBrowse.Add(AfxGetApp()->LoadIcon(ID_QUICKFIND_CLEAR));
 	m_ImageBrowse.Add(AfxGetApp()->LoadIcon(IDR_QUICKFIND_MAG));
 
 	m_bDefaultImage = FALSE;

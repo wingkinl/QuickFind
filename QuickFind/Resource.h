@@ -5,7 +5,10 @@
 #define IDR_QuickFindTYPE_CNTR_IP       7
 #define IDD_ABOUTBOX                    100
 #define IDP_OLE_INIT_FAILED             100
+#define ID_QUICKFIND_NEXT               101
 #define IDP_FAILED_TO_CREATE            102
+#define ID_QUICKFIND_PREVIOUS           103
+#define ID_QUICKFIND_ALL                104
 #define IDC_QUICK_FIND                  111
 #define IDR_POPUP_EDIT                  119
 #define ID_STATUSBAR_PANE1              120
@@ -36,27 +39,27 @@
 #define IDS_EDIT_MENU                   306
 #define IDD_QUICK_FIND_REPLACE          310
 #define IDR_QUICKFIND_MAG               311
-#define IDR_QUICKFIND_CLEAR             312
+#define ID_QUICKFIND_CLEAR              312
 #define IDR_QUICKFIND_CLOSE             313
-#define IDR_QUICKFIND_MATCHCASE         314
-#define IDR_QUICKFIND_MATCHWORD         315
-#define IDR_QUICKFIND_REGEX             316
-#define IDR_QUICKREPLACE_ALL            317
-#define IDR_QUICKREPLACE_NEXT           318
-#define IDC_QUICK_REPLACE_NEXT          333
-#define IDC_QUICK_REPLACE_ALL           444
-#define IDC_QUICK_FIND_MATCHCASE        555
-#define IDC_QUICK_FIND_MATCHWORD        666
-#define IDC_QUICK_FIND_REGEX            777
-#define IDC_QUICK_FIND_SCOPE            888
+#define IDR_QUICKFIND_ACCEL             314
+#define ID_QUICKFIND_REPLACENEXT        315
+#define ID_QUICKFIND_REPLACEALL         316
+#define ID_QUICKFIND_MATCHCASE          317
+#define ID_QUICKFIND_MATCHWORD          318
+#define ID_QUICKFIND_REGEX              319
+#define ID_QUICKFIND_SCOPE              320
+#define IDR_QUICKFIND_ACTION            321
 #define ID_CANCEL_EDIT_CNTR             32768
+#define ID_DUMMY_FINDNEXT               32775
+#define ID_DUMMY_FINDPREVIOUS           32776
+#define ID_DUMMY_FINDALL                32777
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        313
-#define _APS_NEXT_COMMAND_VALUE         32771
+#define _APS_NEXT_RESOURCE_VALUE        325
+#define _APS_NEXT_COMMAND_VALUE         32781
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

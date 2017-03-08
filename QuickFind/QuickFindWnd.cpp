@@ -19,10 +19,16 @@ CQuickFindWnd::CQuickFindWnd()
 	m_bShowOptionsUI = FALSE;
 	m_nSecondRowCtrlsTop = -1;
 	m_nThirdRowCtrlsTop = -1;
+	m_hAccel = nullptr;
+	m_pAccelTable = nullptr;
+	m_nAccelSize = 0;
+	m_nCurFindActionID = 0;
 }
 
 CQuickFindWnd::~CQuickFindWnd()
 {
+	delete[] m_pAccelTable;
+	m_pAccelTable = nullptr;
 }
 
 void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
@@ -32,12 +38,12 @@ void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDCANCEL, m_wndClose);
 	DDX_Control(pDX, IDC_QUICK_FIND, m_wndFind);
 	DDX_Control(pDX, IDC_QUICK_REPLACE, m_wndReplace);
-	DDX_Control(pDX, IDC_QUICK_REPLACE_NEXT, m_wndReplaceNext);
-	DDX_Control(pDX, IDC_QUICK_REPLACE_ALL, m_wndReplaceAll);
-	DDX_Control(pDX, IDC_QUICK_FIND_MATCHCASE, m_wndMatchCase);
-	DDX_Control(pDX, IDC_QUICK_FIND_MATCHWORD, m_wndMatchWord);
-	DDX_Control(pDX, IDC_QUICK_FIND_REGEX, m_wndRegEx);
-	DDX_Control(pDX, IDC_QUICK_FIND_SCOPE, m_wndScope);
+	DDX_Control(pDX, ID_QUICKFIND_REPLACENEXT, m_wndReplaceNext);
+	DDX_Control(pDX, ID_QUICKFIND_REPLACEALL, m_wndReplaceAll);
+	DDX_Control(pDX, ID_QUICKFIND_MATCHCASE, m_wndMatchCase);
+	DDX_Control(pDX, ID_QUICKFIND_MATCHWORD, m_wndMatchWord);
+	DDX_Control(pDX, ID_QUICKFIND_REGEX, m_wndRegEx);
+	DDX_Control(pDX, ID_QUICKFIND_SCOPE, m_wndScope);
 }
 
 
@@ -46,14 +52,48 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_NCHITTEST()
 	ON_WM_SIZE()
 	ON_WM_GETMINMAXINFO()
+	ON_BN_CLICKED(IDOK, &OnButtonFindActionMenu)
+	ON_COMMAND(ID_QUICKFIND_NEXT, &OnFindNext)
+	ON_COMMAND(ID_QUICKFIND_PREVIOUS, &OnFindPrevious)
+	ON_COMMAND(ID_QUICKFIND_ALL, &OnFindAll)
+	ON_COMMAND(ID_QUICKFIND_REPLACENEXT, &OnReplaceNext)
+	ON_COMMAND(ID_QUICKFIND_REPLACEALL, &OnReplaceAll)
 END_MESSAGE_MAP()
 
 
 // CQuickFindWnd message handlers
 
-BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nResID, HINSTANCE hResInst) const
+BOOL CQuickFindWnd::FindAccelerator(UINT uiCmd, CString& str) const
 {
-	auto resName = MAKEINTRESOURCE(nResID);
+	ASSERT(m_pAccelTable);
+	BOOL bFound = FALSE;
+	for (int i = 0; i < m_nAccelSize; i++)
+	{
+		if (m_pAccelTable[i].cmd == uiCmd)
+		{
+			bFound = TRUE;
+
+			CMFCAcceleratorKey helper(&m_pAccelTable[i]);
+
+			CString strKey;
+			helper.Format(strKey);
+
+			if (!str.IsEmpty())
+			{
+				str += _T("; ");
+			}
+
+			str += strKey;
+
+			break;
+		}
+	}
+	return bFound;
+}
+
+BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) const
+{
+	auto resName = MAKEINTRESOURCE(nID);
 	if (!hResInst)
 	{
 		hResInst = AfxFindResourceHandle(resName, RT_ICON);
@@ -65,17 +105,33 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nResID, HINSTANCE hResInst)
 	btn.m_nFlatStyle = CMFCButton::BUTTONSTYLE_FLAT;
 	btn.m_bTransparent = TRUE;
 	btn.SetWindowText(_T(""));
+
 	auto hIcon = (HICON)LoadImage(hResInst, resName, IMAGE_ICON, 16, 16, LR_SHARED);
 	btn.SetImage(hIcon);
+
 	CString strTooltip;
-	strTooltip.LoadString(nResID);
+	strTooltip.LoadString(nID);
+
+ 	CString strAccel;
+
+	BOOL bHasAccel = FindAccelerator(nID, strAccel);
+	if (bHasAccel)
+	{
+		strTooltip += _T(" (");
+		strTooltip += strAccel;
+		strTooltip += _T(')');
+	}
+
 	btn.SetTooltip(strTooltip);
 	return TRUE;
 }
 
-BOOL CQuickFindWnd::Create(LPCTSTR lpszFindWhat, LPCTSTR lpszReplaceWith, DWORD dwFlags, CWnd* pOwnerWnd)
+BOOL CQuickFindWnd::Create(QUICKFIND_INFO* pInfo)
 {
-	CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pOwnerWnd);
+	ASSERT(pInfo->pWndOwner);
+	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pInfo->pWndOwner);
+	if (!bRet)
+		return FALSE;
 	return TRUE;
 }
 
@@ -97,16 +153,30 @@ BOOL CQuickFindWnd::OnInitDialog()
 	ScreenToClient(rect);
 	m_nThirdRowCtrlsTop = rect.top;
 
-	//SetBackgroundColor(RGB(45,45,48), FALSE);
+	m_hAccel = LoadAccelerators(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_QUICKFIND_ACCEL));
+	ASSERT(m_hAccel != NULL);
+	if (!m_pAccelTable)
+	{
+		m_nAccelSize = ::CopyAcceleratorTable(m_hAccel, NULL, 0);
+
+		m_pAccelTable = new ACCEL[m_nAccelSize];
+		ENSURE(m_pAccelTable != NULL);
+
+		::CopyAcceleratorTable(m_hAccel, m_pAccelTable, m_nAccelSize);
+	}
 
 	m_wndFindAction.m_bDefaultClick = TRUE;
-	VERIFY(InitButton(m_wndFindAction, IDR_QUICKREPLACE_NEXT));
+	m_menuFindAction.LoadMenu(IDR_QUICKFIND_ACTION);
+	m_wndFindAction.m_hMenu = m_menuFindAction.GetSubMenu(0)->GetSafeHmenu();
+	m_wndFindAction.m_bOSMenu = FALSE;
+	m_nCurFindActionID = ID_QUICKFIND_NEXT;
+	VERIFY(InitButton(m_wndFindAction, m_nCurFindActionID));
 	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE));
-	VERIFY(InitButton(m_wndReplaceNext, IDR_QUICKREPLACE_NEXT));
-	VERIFY(InitButton(m_wndReplaceAll, IDR_QUICKREPLACE_ALL));
-	VERIFY(InitButton(m_wndMatchCase, IDR_QUICKFIND_MATCHCASE));
-	VERIFY(InitButton(m_wndMatchWord, IDR_QUICKFIND_MATCHWORD));
-	VERIFY(InitButton(m_wndRegEx, IDR_QUICKFIND_REGEX));
+	VERIFY(InitButton(m_wndReplaceNext, ID_QUICKFIND_REPLACENEXT));
+	VERIFY(InitButton(m_wndReplaceAll, ID_QUICKFIND_REPLACEALL));
+	VERIFY(InitButton(m_wndMatchCase, ID_QUICKFIND_MATCHCASE));
+	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD));
+	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -217,4 +287,67 @@ void CQuickFindWnd::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 	lpMMI->ptMinTrackSize.y = rect.bottom + rect.top;
 
 	lpMMI->ptMaxTrackSize.y = m_wndMaxDlgSize.cy;
+}
+
+BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST)
+	{
+		if (m_hAccel != NULL)
+		{
+			if (::TranslateAccelerator(m_hWnd, m_hAccel, pMsg))
+				return TRUE;
+		}
+	}
+
+	return CQuickFindWndBase::PreTranslateMessage(pMsg);
+}
+
+void CQuickFindWnd::OnButtonFindActionMenu()
+{
+	if (m_wndFindAction.m_nMenuResult && m_wndFindAction.m_nMenuResult != m_nCurFindActionID)
+	{
+		m_nCurFindActionID = m_wndFindAction.m_nMenuResult;
+		VERIFY(InitButton(m_wndFindAction, m_nCurFindActionID));
+	}
+	switch (m_nCurFindActionID)
+	{
+	case ID_QUICKFIND_NEXT:
+		OnFindNext();
+		break;
+	case ID_QUICKFIND_PREVIOUS:
+		OnFindPrevious();
+		break;
+	case ID_QUICKFIND_ALL:
+		OnFindAll();
+		break;
+	default:
+		ASSERT(0);
+		break;
+	}
+}
+
+void CQuickFindWnd::OnFindNext()
+{
+
+}
+
+void CQuickFindWnd::OnFindPrevious()
+{
+
+}
+
+void CQuickFindWnd::OnFindAll()
+{
+
+}
+
+void CQuickFindWnd::OnReplaceNext()
+{
+
+}
+
+void CQuickFindWnd::OnReplaceAll()
+{
+
 }

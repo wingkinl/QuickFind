@@ -25,15 +25,14 @@ public:
 	_QUICKFIND_STATE();
 
 	CQuickFindWnd*	pQuickFindWnd;
-	DWORD			dwFlags;
-	CStringArray	saSearchHistory;
-	CStringArray	saReplaceHistory;
+	QUICKFIND_INFO	info;
 };
 
 _QUICKFIND_STATE::_QUICKFIND_STATE()
 {
 	pQuickFindWnd = nullptr;
-	dwFlags = 0;
+	info.dwFlags = 0;
+	info.pWndOwner = nullptr;
 }
 
 _QUICKFIND_STATE _quickfindState;
@@ -149,7 +148,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 {
 	if (_quickfindState.pQuickFindWnd)
 	{
-		// might need to switch UI
+		// TODO: need to switch UI
 		_quickfindState.pQuickFindWnd->SetActiveWindow();
 		_quickfindState.pQuickFindWnd->ShowWindow(SW_SHOW);
 		return;
@@ -158,22 +157,18 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	// if selection is empty or spans multiple lines use old find text
 	if (strFind.IsEmpty() || (strFind.FindOneOf(_T("\n\r")) != -1))
 	{
-		if (!_quickfindState.saSearchHistory.IsEmpty())
-			strFind = _quickfindState.saSearchHistory[0];
+		
 	}
-	CString strReplace;
-	if (!_quickfindState.saReplaceHistory.IsEmpty())
-		strReplace = _quickfindState.saReplaceHistory[0];
 	_quickfindState.pQuickFindWnd = new CQuickFindWnd;
 	ASSERT(_quickfindState.pQuickFindWnd);
-	DWORD dwFlags = _quickfindState.dwFlags;
-	if (!_quickfindState.pQuickFindWnd->Create(strFind, strReplace, dwFlags, this))
+	_quickfindState.info.pWndOwner = this;
+	if (!_quickfindState.pQuickFindWnd->Create(&_quickfindState.info))
 	{
 		_quickfindState.pQuickFindWnd = nullptr;
 		ASSERT_VALID(this);
 		return;
 	}
-	_quickfindState.dwFlags = dwFlags;
+	_quickfindState.pQuickFindWnd->SetWindowPos(nullptr, 100, 100, -1, -1, SWP_NOSIZE);
 	_quickfindState.pQuickFindWnd->SetActiveWindow();
 	_quickfindState.pQuickFindWnd->ShowWindow(SW_SHOW);
 	ASSERT_VALID(this);

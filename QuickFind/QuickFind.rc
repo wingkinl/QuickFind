@@ -17,88 +17,6 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Neutral (Default) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUD)
-LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
-#pragma code_page(936)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDR_QUICKFIND_CLEAR     ICON                    "res\\FindClear.ico"
-
-IDR_QUICKFIND_MAG       ICON                    "res\\FindMag.ico"
-
-IDR_QUICKFIND_MATCHCASE ICON                    "res\\MatchCase.ico"
-
-IDR_QUICKFIND_MATCHWORD ICON                    "res\\MatchWord.ico"
-
-IDR_QUICKFIND_REGEX     ICON                    "res\\RegEx.ico"
-
-IDR_QUICKREPLACE_ALL    ICON                    "res\\ReplaceAll.ico"
-
-IDR_QUICKREPLACE_NEXT   ICON                    "res\\ReplaceNext.ico"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_QUICK_FIND_REPLACE DIALOGEX 0, 0, 246, 49
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_SYSMENU
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    COMBOBOX        IDC_QUICK_FIND,8,3,193,145,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_QUICK_REPLACE,8,18,193,118,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "OK",IDOK,203,2,23,14
-    PUSHBUTTON      "R",IDC_QUICK_REPLACE_NEXT,203,17,14,14
-    PUSHBUTTON      "A",IDC_QUICK_REPLACE_ALL,218,17,14,14
-    CONTROL         "",IDC_QUICK_FIND_MATCHCASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,32,14,14
-    CONTROL         "",IDC_QUICK_FIND_MATCHWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,22,32,14,14
-    CONTROL         "",IDC_QUICK_FIND_REGEX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,36,32,14,14
-    COMBOBOX        IDC_QUICK_FIND_SCOPE,56,33,175,71,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "X",IDCANCEL,228,2,14,14
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_QUICK_FIND_REPLACE, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        TOPMARGIN, 7
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// AFX_DIALOG_LAYOUT
-//
-
-IDD_QUICK_FIND_REPLACE AFX_DIALOG_LAYOUT
-BEGIN
-    0
-END
-
-#endif    // Neutral (Default) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Chinese (Simplified, PRC) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
@@ -148,6 +66,111 @@ END
 #endif    // APSTUDIO_INVOKED
 
 #endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral (Default) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUD)
+LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+ID_QUICKFIND_NEXT       ICON                    "res\\FindNext.ico"
+
+ID_QUICKFIND_CLEAR     ICON                    "res\\FindClear.ico"
+
+IDR_QUICKFIND_MAG       ICON                    "res\\FindMag.ico"
+
+ID_QUICKFIND_MATCHCASE ICON                    "res\\MatchCase.ico"
+
+ID_QUICKFIND_MATCHWORD  ICON                    "res\\MatchWord.ico"
+
+ID_QUICKFIND_REGEX      ICON                    "res\\RegEx.ico"
+
+ID_QUICKFIND_REPLACEALL ICON                    "res\\ReplaceAll.ico"
+
+ID_QUICKFIND_REPLACENEXT ICON                    "res\\ReplaceNext.ico"
+
+IDR_QUICKFIND_CLOSE     ICON                    "res\\FindClose.ico"
+
+ID_QUICKFIND_PREVIOUS   ICON                    "res\\FindPrevious.ico"
+
+ID_QUICKFIND_ALL       ICON                    "res\\FindMag.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_QUICK_FIND_REPLACE DIALOGEX 0, 0, 246, 49
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_BORDER | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    COMBOBOX        IDC_QUICK_FIND,8,3,193,145,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_QUICK_REPLACE,8,18,193,118,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "OK",IDOK,203,2,23,14
+    PUSHBUTTON      "R",ID_QUICKFIND_REPLACENEXT,203,17,14,14
+    PUSHBUTTON      "A",ID_QUICKFIND_REPLACEALL,218,17,14,14
+    CONTROL         "",ID_QUICKFIND_MATCHCASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,32,14,14
+    CONTROL         "",ID_QUICKFIND_MATCHWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,22,32,14,14
+    CONTROL         "",ID_QUICKFIND_REGEX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,36,32,14,14
+    COMBOBOX        ID_QUICKFIND_SCOPE,56,33,175,71,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "X",IDCANCEL,228,2,14,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_QUICK_FIND_REPLACE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        TOPMARGIN, 7
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_QUICK_FIND_REPLACE AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_QUICKFIND_ACCEL ACCELERATORS
+BEGIN
+    "C",            ID_QUICKFIND_MATCHCASE, VIRTKEY, ALT, NOINVERT
+    "W",            ID_QUICKFIND_MATCHWORD, VIRTKEY, ALT, NOINVERT
+    "E",            ID_QUICKFIND_REGEX,     VIRTKEY, ALT, NOINVERT
+    VK_F3,          ID_QUICKFIND_NEXT,      VIRTKEY, NOINVERT
+    VK_F3,          ID_QUICKFIND_PREVIOUS,  VIRTKEY, SHIFT, NOINVERT
+END
+
+#endif    // Neutral (Default) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -204,6 +227,45 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    "A",            ID_EDIT_SELECT_ALL,     VIRTKEY, CONTROL
+    "F",            ID_EDIT_FIND,           VIRTKEY, CONTROL
+    VK_F3,          ID_EDIT_REPEAT,         VIRTKEY 
+    "H",            ID_EDIT_REPLACE,        VIRTKEY, CONTROL
+    VK_RETURN,      ID_OLE_EDIT_PROPERTIES, VIRTKEY, ALT, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+    VK_ESCAPE,      ID_CANCEL_EDIT_CNTR,    VIRTKEY, NOINVERT
+END
+
+IDR_QuickFindTYPE_CNTR_IP ACCELERATORS
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+    VK_ESCAPE,      ID_CANCEL_EDIT_CNTR,    VIRTKEY, NOINVERT
+END
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -415,43 +477,14 @@ BEGIN
     MENUITEM "Win&dows 7",                  ID_VIEW_APPLOOK_WINDOWS_7
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-IDR_MAINFRAME ACCELERATORS
+IDR_QUICKFIND_ACTION MENU
 BEGIN
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
-    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
-    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
-    "A",            ID_EDIT_SELECT_ALL,     VIRTKEY, CONTROL
-    "F",            ID_EDIT_FIND,           VIRTKEY, CONTROL
-    VK_F3,          ID_EDIT_REPEAT,         VIRTKEY 
-    "H",            ID_EDIT_REPLACE,        VIRTKEY, CONTROL
-    VK_RETURN,      ID_OLE_EDIT_PROPERTIES, VIRTKEY, ALT, NOINVERT
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
-    VK_ESCAPE,      ID_CANCEL_EDIT_CNTR,    VIRTKEY, NOINVERT
-END
-
-IDR_QuickFindTYPE_CNTR_IP ACCELERATORS
-BEGIN
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
-    VK_ESCAPE,      ID_CANCEL_EDIT_CNTR,    VIRTKEY, NOINVERT
+    POPUP "Dummy"
+    BEGIN
+        MENUITEM "Find Next",                   ID_QUICKFIND_NEXT
+        MENUITEM "Find Previous",               ID_QUICKFIND_PREVIOUS
+        MENUITEM "Find All",                    ID_QUICKFIND_ALL
+    END
 END
 
 
@@ -502,7 +535,10 @@ END
 STRINGTABLE
 BEGIN
     IDP_OLE_INIT_FAILED     "OLE initialization failed.  Make sure that the OLE libraries are the correct version."
+    ID_QUICKFIND_NEXT       "Find Next"
     IDP_FAILED_TO_CREATE    "Failed to create object.  Make sure the object is entered in the system registry."
+    ID_QUICKFIND_PREVIOUS   "Find Previous"
+    ID_QUICKFIND_ALL        "Find All"
 END
 
 STRINGTABLE
@@ -650,13 +686,13 @@ END
 STRINGTABLE
 BEGIN
     IDS_EDIT_MENU           "Edit"
-    IDR_QUICKFIND_CLEAR     "Clear search"
+    ID_QUICKFIND_CLEAR     "Clear search"
     IDR_QUICKFIND_CLOSE     "Close"
-    IDR_QUICKFIND_MATCHCASE "Match case"
-    IDR_QUICKFIND_MATCHWORD "Match whole word"
-    IDR_QUICKFIND_REGEX     "Use Regular Expressions"
-    IDR_QUICKREPLACE_ALL    "Replace all"
-    IDR_QUICKREPLACE_NEXT   "Replace next"
+    ID_QUICKFIND_MATCHCASE "Match case"
+    ID_QUICKFIND_REPLACENEXT "Replace next"
+    ID_QUICKFIND_REPLACEALL "Replace all"
+    ID_QUICKFIND_MATCHWORD  "Match whole word"
+    ID_QUICKFIND_REGEX      "Use Regular Expressions"
 END
 
 #endif    // English (United States) resources
