@@ -1,0 +1,32 @@
+
+*.[Dd]ll
+*.DLL
+*.[Ee]xe
+*.EXE
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+
+
+# Visual C++ cache files
+ipch/
+*.APS
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+*.user
+*.sln.docstates
+*.opendb
+*.VC.db
+*.dgml
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+.vs/
