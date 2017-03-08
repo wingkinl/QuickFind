@@ -31,8 +31,6 @@ public:
 _QUICKFIND_STATE::_QUICKFIND_STATE()
 {
 	pQuickFindWnd = nullptr;
-	info.dwFlags = 0;
-	info.pWndOwner = nullptr;
 }
 
 _QUICKFIND_STATE _quickfindState;
@@ -162,7 +160,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	_quickfindState.pQuickFindWnd = new CQuickFindWnd;
 	ASSERT(_quickfindState.pQuickFindWnd);
 	_quickfindState.info.pWndOwner = this;
-	if (!_quickfindState.pQuickFindWnd->Create(&_quickfindState.info))
+	if (!_quickfindState.pQuickFindWnd->Create(_quickfindState.info))
 	{
 		_quickfindState.pQuickFindWnd = nullptr;
 		ASSERT_VALID(this);

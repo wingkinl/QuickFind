@@ -219,7 +219,6 @@
     <ResourceCompile Include="QuickFind.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\VS2015\QuickFind\DlgTest\res\FindClose.ico" />
     <Image Include="res\FindClear.ico" />
     <Image Include="res\FindClose.ico" />
     <Image Include="res\FindMag.ico" />

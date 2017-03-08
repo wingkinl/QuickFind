@@ -5,24 +5,30 @@
 
 #define QUICKFINDMSGSTRING  _T("QuickFindReplace")
 
-struct QUICKFIND_INFO
+class QUICKFIND_INFO
 {
+public:
 	enum Flags {
-		FlagsInitReplace	= 0x00000001,
-		FlagsMatchCase		= 0x00000002,
-		FlagsMatchWord		= 0x00000004,
-		FlagsUseRegEx		= 0x00000008,
-		FlagsShowScope		= 0x00000010,
+		FlagsInitShowReplace	= 0x00000001,
+		FlagsInitShowOptions	= 0x00000002,
+		FlagsShowScope			= 0x00000004,
+		FlagsMatchCase			= 0x00010000,
+		FlagsMatchWord			= 0x00020000,
+		FlagsUseRegEx			= 0x00040000,
 	};
 	DWORD			dwFlags;
 	CWnd*			pWndOwner;
 	CStringArray	saSearch;
 	CStringArray	saReplace;
+
+	QUICKFIND_INFO();
+	
+	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs);
 };
 
 // CQuickFindWnd dialog
 
-typedef CDialog	CQuickFindWndBase;
+typedef CDialogEx	CQuickFindWndBase;
 
 class CQuickFindWnd : public CQuickFindWndBase
 {
@@ -39,30 +45,34 @@ public:
 public:
 	
 public:
-	virtual BOOL Create(QUICKFIND_INFO* pInfo);
+	virtual BOOL Create(const QUICKFIND_INFO& info);
 
 	BOOL OnInitDialog() override;
+
+	const QUICKFIND_INFO& GetParams();
 protected:
 	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
 
 	BOOL PreTranslateMessage(MSG* pMsg) override;
 
 	BOOL FindAccelerator(UINT uiCmd, CString& str) const;
+
+	void ShowReplaceUI(BOOL bShow);
 protected:
-	CSearchComboBox	m_wndFind;
-	CComboBox		m_wndReplace;
+	CSearchComboBox	m_wndFind;	
 	
 	CMenu			m_menuFindAction;
 	CMFCMenuButton	m_wndFindAction;
 	int				m_nCurFindActionID;
 	CMFCButton		m_wndClose;
+
+	CComboBox		m_wndReplace;
 	CMFCButton		m_wndReplaceNext;
 	CMFCButton		m_wndReplaceAll;
 
 	CMFCButton		m_wndMatchCase;
 	CMFCButton		m_wndMatchWord;
 	CMFCButton		m_wndRegEx;
-
 	CComboBox		m_wndScope;
 
 	CSize			m_szLastClientSize;
@@ -78,11 +88,13 @@ protected:
 	HACCEL			m_hAccel;
 	ACCEL*			m_pAccelTable;
 	int				m_nAccelSize;
+
+	QUICKFIND_INFO	m_info;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	afx_msg void OnPaint();
-	afx_msg LRESULT OnNcHitTest(CPoint point);
+	afx_msg LRESULT OnNcHitTest(CPoint point);	
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg void OnButtonFindActionMenu();

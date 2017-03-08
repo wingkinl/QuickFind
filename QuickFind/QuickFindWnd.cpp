@@ -7,6 +7,21 @@
 #include "Resource.h"
 
 
+QUICKFIND_INFO::QUICKFIND_INFO()
+{
+	dwFlags = FlagsInitShowOptions;
+	pWndOwner = nullptr;
+}
+
+QUICKFIND_INFO& QUICKFIND_INFO::operator=(const QUICKFIND_INFO& rhs)
+{
+	dwFlags = rhs.dwFlags;
+	pWndOwner = rhs.pWndOwner;
+	saSearch.Copy(rhs.saSearch);
+	saReplace.Copy(rhs.saReplace);
+	return *this;
+}
+
 // CQuickFindWnd dialog
 
 IMPLEMENT_DYNAMIC(CQuickFindWnd, CQuickFindWndBase)
@@ -16,7 +31,7 @@ CQuickFindWnd::CQuickFindWnd()
 {
 	m_szLastClientSize.SetSize(0, 0);
 	m_bShowReplaceUI = FALSE;
-	m_bShowOptionsUI = FALSE;
+	m_bShowOptionsUI = TRUE;
 	m_nSecondRowCtrlsTop = -1;
 	m_nThirdRowCtrlsTop = -1;
 	m_hAccel = nullptr;
@@ -62,6 +77,11 @@ END_MESSAGE_MAP()
 
 
 // CQuickFindWnd message handlers
+
+const QUICKFIND_INFO& CQuickFindWnd::GetParams()
+{
+	return m_info;
+}
 
 BOOL CQuickFindWnd::FindAccelerator(UINT uiCmd, CString& str) const
 {
@@ -126,10 +146,11 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) co
 	return TRUE;
 }
 
-BOOL CQuickFindWnd::Create(QUICKFIND_INFO* pInfo)
+BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info)
 {
-	ASSERT(pInfo->pWndOwner);
-	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pInfo->pWndOwner);
+	ASSERT(info.pWndOwner);
+	m_info = info;
+	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, m_info.pWndOwner);
 	if (!bRet)
 		return FALSE;
 	return TRUE;
@@ -178,6 +199,13 @@ BOOL CQuickFindWnd::OnInitDialog()
 	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD));
 	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX));
 
+	m_bShowReplaceUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowReplace);
+	m_bShowOptionsUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowOptions);
+
+	// let OnSize handles it properly
+//	if (!m_bShowReplaceUI || !m_bShowOptionsUI)
+//		SetWindowPos(nullptr, -1, -1, m_wndMaxDlgSize.cx, m_wndMaxDlgSize.cy-1, SWP_NOMOVE);
+	m_bShowReplaceUI = m_bShowOptionsUI = TRUE;
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -219,6 +247,15 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 	return CQuickFindWndBase::OnNcHitTest(point);
 }
 
+void CQuickFindWnd::ShowReplaceUI(BOOL bShow)
+{
+	CWnd* arrWnds[] = { &m_wndReplace, &m_wndReplaceNext, &m_wndReplaceAll };
+	for (auto pWnd : arrWnds)
+	{
+		pWnd->ShowWindow(bShow);
+	}
+}
+
 void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 {
 	CQuickFindWndBase::OnSize(nType, cx, cy);
@@ -234,10 +271,6 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 
 	CSize szDlgNewSize(cx, cy);
 	CSize szDiff = szDlgNewSize - m_szLastClientSize;
-
-	if (szDiff.cy)
-	{
-	}
 
 	CWnd* arrWndResizeWidth[] = {&m_wndFind, &m_wndReplace, &m_wndScope};
 	CWnd* arrWndAnchorRight[] = { &m_wndFindAction, &m_wndClose, &m_wndReplaceNext, &m_wndReplaceAll };
@@ -281,12 +314,15 @@ void CQuickFindWnd::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 {
 	CQuickFindWndBase::OnGetMinMaxInfo(lpMMI);
 	lpMMI->ptMinTrackSize.x = 200;
-	CRect rect;
-	m_wndFind.GetWindowRect(rect);
-	ScreenToClient(rect);
-	lpMMI->ptMinTrackSize.y = rect.bottom + rect.top;
-
-	lpMMI->ptMaxTrackSize.y = m_wndMaxDlgSize.cy;
+	if (m_wndFind.GetSafeHwnd())
+	{
+		CRect rect;
+		m_wndFind.GetWindowRect(rect);
+		ScreenToClient(rect);
+		lpMMI->ptMinTrackSize.y = rect.bottom + rect.top;
+	}
+	if (m_wndMaxDlgSize.cy)
+		lpMMI->ptMaxTrackSize.y = m_wndMaxDlgSize.cy;
 }
 
 BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
