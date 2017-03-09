@@ -30,6 +30,7 @@ CQuickFindWnd::CQuickFindWnd()
 	: CQuickFindWndBase(IDD_QUICK_FIND_REPLACE)
 {
 	m_szLastClientSize.SetSize(0, 0);
+	m_nLastDlgHeight = 0;
 	m_bShowReplaceUI = FALSE;
 	m_bShowOptionsUI = TRUE;
 	m_nSecondRowCtrlsTop = -1;
@@ -65,6 +66,7 @@ void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_PAINT()
 	ON_WM_NCHITTEST()
+	ON_WM_SIZING()
 	ON_WM_SIZE()
 	ON_WM_GETMINMAXINFO()
 	ON_BN_CLICKED(IDOK, &OnButtonFindActionMenu)
@@ -73,6 +75,8 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_QUICKFIND_ALL, &OnFindAll)
 	ON_COMMAND(ID_QUICKFIND_REPLACENEXT, &OnReplaceNext)
 	ON_COMMAND(ID_QUICKFIND_REPLACEALL, &OnReplaceAll)
+	ON_COMMAND(ID_EDIT_FIND, &OnEditFind)
+	ON_COMMAND(ID_EDIT_REPLACE, &OnEditReplace)
 END_MESSAGE_MAP()
 
 
@@ -163,8 +167,10 @@ BOOL CQuickFindWnd::OnInitDialog()
 	GetClientRect(rect);
 	m_szLastClientSize = rect.Size();
 
-	GetWindowRect(rect);
-	m_wndMaxDlgSize = rect.Size();
+	CRect rectDlg;
+	GetWindowRect(rectDlg);
+	m_szMaxDlgSize = rectDlg.Size();
+	m_nLastDlgHeight = m_szMaxDlgSize.cy;
 
 	m_wndReplace.GetWindowRect(rect);
 	ScreenToClient(rect);
@@ -201,11 +207,14 @@ BOOL CQuickFindWnd::OnInitDialog()
 
 	m_bShowReplaceUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowReplace);
 	m_bShowOptionsUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowOptions);
+	if (!m_bShowReplaceUI || !m_bShowOptionsUI)
+	{
+		CalcLayout(&rectDlg);
+		CSize szDlg = rectDlg.Size();
+		SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
+		m_nLastDlgHeight = szDlg.cy;
+	}
 
-	// let OnSize handles it properly
-//	if (!m_bShowReplaceUI || !m_bShowOptionsUI)
-//		SetWindowPos(nullptr, -1, -1, m_wndMaxDlgSize.cx, m_wndMaxDlgSize.cy-1, SWP_NOMOVE);
-	m_bShowReplaceUI = m_bShowOptionsUI = TRUE;
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -247,11 +256,113 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 	return CQuickFindWndBase::OnNcHitTest(point);
 }
 
+void CQuickFindWnd::CalcLayout(LPRECT pRect)
+{
+	if (m_bShowReplaceUI && m_bShowOptionsUI)
+	{
+		pRect->bottom = pRect->top + m_szMaxDlgSize.cy;
+	}
+	else if (m_bShowReplaceUI || m_bShowOptionsUI)
+	{
+		CWnd* pWnd = m_bShowReplaceUI ? (CWnd*)&m_wndReplace : &m_wndMatchCase;
+		CRect rect;
+		pWnd->GetWindowRect(rect);
+		int nHeight = rect.Height();
+		GetClientRect(rect);
+		rect.bottom = m_nSecondRowCtrlsTop + nHeight;
+		ClientToScreen(rect);
+		pRect->bottom = rect.bottom + 3;
+	}
+	else
+	{
+		CRect rect;
+		m_wndFind.GetWindowRect(rect);
+		pRect->bottom = rect.bottom + 3;
+	}
+	ShowReplaceUI(m_bShowReplaceUI);
+	ShowOptionsUI(m_bShowOptionsUI);
+}
+
+BOOL CQuickFindWnd::IsInitShowAsReplace() const
+{
+	return !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowReplace);
+}
+
+void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
+{
+	CQuickFindWndBase::OnSizing(fwSide, pRect);
+	if (fwSide == WMSZ_LEFT)
+		return;
+
+	CRect rectOldWnd;
+	GetWindowRect(rectOldWnd);
+
+	CRect rect(pRect);
+	//int nYDelta = rect.Height() - rectOldWnd.Height();
+	//if (nYDelta == 0)
+	//	return;
+	int nYDelta = rect.Height() - m_nLastDlgHeight;
+	if (abs(nYDelta) < 5)
+		return;
+	if (m_bShowReplaceUI && m_bShowOptionsUI)
+	{
+		// you can't be any larger in height
+		ASSERT(nYDelta < 0);
+		if (IsInitShowAsReplace())
+			m_bShowOptionsUI = FALSE;
+		else
+			m_bShowReplaceUI = FALSE;
+	}
+	else if (m_bShowReplaceUI)
+	{
+		if (nYDelta < 0)
+			m_bShowReplaceUI = FALSE;
+		else
+			m_bShowOptionsUI = TRUE;
+	}
+	else if (m_bShowOptionsUI)
+	{
+		if (nYDelta < 0)
+			m_bShowOptionsUI = FALSE;
+		else
+			m_bShowReplaceUI = TRUE;
+	}
+	else
+	{
+		// you can't be any smaller in height
+		ASSERT(nYDelta > 0);
+		if (IsInitShowAsReplace())
+			m_bShowReplaceUI = TRUE;
+		else
+			m_bShowOptionsUI = TRUE;
+	}
+	CalcLayout(pRect);
+	m_nLastDlgHeight = pRect->bottom - pRect->top;
+}
+
 void CQuickFindWnd::ShowReplaceUI(BOOL bShow)
 {
 	CWnd* arrWnds[] = { &m_wndReplace, &m_wndReplaceNext, &m_wndReplaceAll };
 	for (auto pWnd : arrWnds)
 	{
+		pWnd->ShowWindow(bShow);
+	}
+}
+
+void CQuickFindWnd::ShowOptionsUI(BOOL bShow)
+{
+	CWnd* arrWnds[] ={ &m_wndMatchCase, &m_wndMatchWord, &m_wndRegEx, &m_wndScope };
+	BOOL bMoveWnd = bShow && !IsInitShowAsReplace();
+	for (auto pWnd : arrWnds)
+	{
+		if (bMoveWnd)
+		{
+			CRect rect;
+			pWnd->GetWindowRect(rect);
+			ScreenToClient(rect);
+			rect.top = m_bShowReplaceUI ? m_nThirdRowCtrlsTop : m_nSecondRowCtrlsTop;
+			pWnd->SetWindowPos(nullptr, rect.left, rect.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
+		}
 		pWnd->ShowWindow(bShow);
 	}
 }
@@ -321,8 +432,8 @@ void CQuickFindWnd::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 		ScreenToClient(rect);
 		lpMMI->ptMinTrackSize.y = rect.bottom + rect.top;
 	}
-	if (m_wndMaxDlgSize.cy)
-		lpMMI->ptMaxTrackSize.y = m_wndMaxDlgSize.cy;
+	if (m_szMaxDlgSize.cy)
+		lpMMI->ptMaxTrackSize.y = m_szMaxDlgSize.cy;
 }
 
 BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
@@ -386,4 +497,35 @@ void CQuickFindWnd::OnReplaceNext()
 void CQuickFindWnd::OnReplaceAll()
 {
 
+}
+
+void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace)
+{
+	m_bShowReplaceUI = bShowAsReplace;
+	m_bShowOptionsUI = TRUE;
+	CRect rectDlg;
+	GetWindowRect(rectDlg);
+
+	if (bShowAsReplace)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsInitShowReplace;
+	else
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsInitShowReplace;
+
+	CalcLayout(&rectDlg);
+	CSize szDlg = rectDlg.Size();
+	SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
+}
+
+void CQuickFindWnd::OnEditFind()
+{
+	if (!IsInitShowAsReplace() && m_bShowOptionsUI)
+		return;
+	SwitchUI(FALSE);
+}
+
+void CQuickFindWnd::OnEditReplace()
+{
+	if (IsInitShowAsReplace() && m_bShowOptionsUI)
+		return;
+	SwitchUI(TRUE);
 }

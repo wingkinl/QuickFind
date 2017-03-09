@@ -13,7 +13,6 @@
 #include "CntrItem.h"
 #include "resource.h"
 #include "QuickFindView.h"
-#include "QuickFindWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -34,6 +33,23 @@ _QUICKFIND_STATE::_QUICKFIND_STATE()
 }
 
 _QUICKFIND_STATE _quickfindState;
+
+CQuickFindWndDemo::CQuickFindWndDemo()
+{
+
+}
+
+BEGIN_MESSAGE_MAP(CQuickFindWndDemo, CQuickFindWnd)
+	ON_WM_NCDESTROY()
+END_MESSAGE_MAP()
+
+void CQuickFindWndDemo::OnNcDestroy()
+{
+	_quickfindState.pQuickFindWnd = nullptr;
+
+	//Let the base class do its thing
+	__super::OnNcDestroy();
+}
 
 // CQuickFindView
 
@@ -142,12 +158,18 @@ void CQuickFindView::OnEditReplace()
 	OnEditFindReplace(FALSE);
 }
 
+CQuickFindWnd* CQuickFindView::CreateFindReplaceWindow()
+{
+	return new CQuickFindWndDemo;
+}
+
 void CQuickFindView::OnEditFindReplace(BOOL bFind)
 {
 	if (_quickfindState.pQuickFindWnd)
 	{
 		// TODO: need to switch UI
 		_quickfindState.pQuickFindWnd->SetActiveWindow();
+		_quickfindState.pQuickFindWnd->SendMessage(WM_COMMAND, bFind ? ID_EDIT_FIND : ID_EDIT_REPLACE);
 		_quickfindState.pQuickFindWnd->ShowWindow(SW_SHOW);
 		return;
 	}
@@ -157,7 +179,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	{
 		
 	}
-	_quickfindState.pQuickFindWnd = new CQuickFindWnd;
+	_quickfindState.pQuickFindWnd = CreateFindReplaceWindow();
 	ASSERT(_quickfindState.pQuickFindWnd);
 	_quickfindState.info.pWndOwner = this;
 	if (!_quickfindState.pQuickFindWnd->Create(_quickfindState.info))

@@ -57,7 +57,14 @@ protected:
 
 	BOOL FindAccelerator(UINT uiCmd, CString& str) const;
 
+	void CalcLayout(LPRECT pRect);
+
+	BOOL IsInitShowAsReplace() const;
+private:
 	void ShowReplaceUI(BOOL bShow);
+	void ShowOptionsUI(BOOL bShow);
+
+	void SwitchUI(BOOL bShowAsReplace);
 protected:
 	CSearchComboBox	m_wndFind;	
 	
@@ -76,6 +83,7 @@ protected:
 	CComboBox		m_wndScope;
 
 	CSize			m_szLastClientSize;
+	int				m_nLastDlgHeight;
 
 	BOOL			m_bShowReplaceUI;
 	BOOL			m_bShowOptionsUI;
@@ -83,7 +91,7 @@ protected:
 	int				m_nSecondRowCtrlsTop;
 	int				m_nThirdRowCtrlsTop;
 
-	CSize			m_wndMaxDlgSize;
+	CSize			m_szMaxDlgSize;
 
 	HACCEL			m_hAccel;
 	ACCEL*			m_pAccelTable;
@@ -94,7 +102,8 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
 	afx_msg void OnPaint();
-	afx_msg LRESULT OnNcHitTest(CPoint point);	
+	afx_msg LRESULT OnNcHitTest(CPoint point);		
+	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg void OnButtonFindActionMenu();
@@ -103,6 +112,8 @@ protected:
 	afx_msg void OnFindAll();
 	afx_msg void OnReplaceNext();
 	afx_msg void OnReplaceAll();
+	afx_msg void OnEditFind();
+	afx_msg void OnEditReplace();
 
 	DECLARE_MESSAGE_MAP()
 };

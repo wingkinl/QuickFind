@@ -85,11 +85,11 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 // remains consistent on all systems.
 ID_QUICKFIND_NEXT       ICON                    "res\\FindNext.ico"
 
-ID_QUICKFIND_CLEAR     ICON                    "res\\FindClear.ico"
+ID_QUICKFIND_CLEAR      ICON                    "res\\FindClear.ico"
 
 IDR_QUICKFIND_MAG       ICON                    "res\\FindMag.ico"
 
-ID_QUICKFIND_MATCHCASE ICON                    "res\\MatchCase.ico"
+ID_QUICKFIND_MATCHCASE  ICON                    "res\\MatchCase.ico"
 
 ID_QUICKFIND_MATCHWORD  ICON                    "res\\MatchWord.ico"
 
@@ -103,7 +103,7 @@ IDR_QUICKFIND_CLOSE     ICON                    "res\\FindClose.ico"
 
 ID_QUICKFIND_PREVIOUS   ICON                    "res\\FindPrevious.ico"
 
-ID_QUICKFIND_ALL       ICON                    "res\\FindMag.ico"
+ID_QUICKFIND_ALL        ICON                    "res\\FindMag.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -111,8 +111,8 @@ ID_QUICKFIND_ALL       ICON                    "res\\FindMag.ico"
 // Dialog
 //
 
-IDD_QUICK_FIND_REPLACE DIALOGEX 0, 0, 246, 49
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_BORDER | WS_SYSMENU
+IDD_QUICK_FIND_REPLACE DIALOGEX 0, 0, 248, 49
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_BORDER
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     COMBOBOX        IDC_QUICK_FIND,8,3,193,145,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
@@ -139,6 +139,7 @@ BEGIN
     IDD_QUICK_FIND_REPLACE, DIALOG
     BEGIN
         LEFTMARGIN, 7
+        RIGHTMARGIN, 246
         TOPMARGIN, 7
     END
 END
@@ -165,9 +166,11 @@ IDR_QUICKFIND_ACCEL ACCELERATORS
 BEGIN
     "C",            ID_QUICKFIND_MATCHCASE, VIRTKEY, ALT, NOINVERT
     "W",            ID_QUICKFIND_MATCHWORD, VIRTKEY, ALT, NOINVERT
-    "E",            ID_QUICKFIND_REGEX,     VIRTKEY, ALT, NOINVERT
     VK_F3,          ID_QUICKFIND_NEXT,      VIRTKEY, NOINVERT
     VK_F3,          ID_QUICKFIND_PREVIOUS,  VIRTKEY, SHIFT, NOINVERT
+    "E",            ID_QUICKFIND_REGEX,     VIRTKEY, ALT, NOINVERT
+    "F",            ID_EDIT_FIND,           VIRTKEY, CONTROL, NOINVERT
+    "H",            ID_EDIT_REPLACE,        VIRTKEY, CONTROL, NOINVERT
 END
 
 #endif    // Neutral (Default) resources
@@ -686,11 +689,11 @@ END
 STRINGTABLE
 BEGIN
     IDS_EDIT_MENU           "Edit"
-    ID_QUICKFIND_CLEAR     "Clear search"
+    ID_QUICKFIND_CLEAR      "Clear search"
     IDR_QUICKFIND_CLOSE     "Close"
-    ID_QUICKFIND_MATCHCASE "Match case"
     ID_QUICKFIND_REPLACENEXT "Replace next"
     ID_QUICKFIND_REPLACEALL "Replace all"
+    ID_QUICKFIND_MATCHCASE  "Match case"
     ID_QUICKFIND_MATCHWORD  "Match whole word"
     ID_QUICKFIND_REGEX      "Use Regular Expressions"
 END

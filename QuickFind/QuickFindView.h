@@ -3,8 +3,19 @@
 //
 
 #pragma once
+#include "QuickFindWnd.h"
 
 class CQuickFindCntrItem;
+
+class CQuickFindWndDemo : public CQuickFindWnd
+{
+public:
+	CQuickFindWndDemo();
+protected:
+	afx_msg void OnNcDestroy();
+
+	DECLARE_MESSAGE_MAP()
+};
 
 class CQuickFindView : public CRichEditView
 {
@@ -24,7 +35,8 @@ public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 protected:
 	virtual void OnInitialUpdate(); // called first time after construct
-
+	
+	virtual CQuickFindWnd* CreateFindReplaceWindow();
 // Implementation
 public:
 	virtual ~CQuickFindView();
@@ -42,7 +54,7 @@ protected:
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnEditFind();
-	afx_msg void OnEditReplace();
+	afx_msg void OnEditReplace();	
 	DECLARE_MESSAGE_MAP()
 };
 
