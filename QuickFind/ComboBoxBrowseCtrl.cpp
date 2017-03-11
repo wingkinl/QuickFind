@@ -60,22 +60,28 @@ void CComboBoxBrowseCtrl::Init()
 	}
 }
 
-CMFCEditBrowseCtrl* CComboBoxBrowseCtrl::GetEditControl() const
+CComboBoxBrowseCtrlEdit* CComboBoxBrowseCtrl::GetEditControl() const
 {
 	return m_pEdit.get();
 }
 
-class CComboBoxBrowseCtrlEdit : public CMFCEditBrowseCtrl
+CComboBoxBrowseCtrlEdit::CComboBoxBrowseCtrlEdit()
 {
-public:
-	BOOL PreTranslateMessage(MSG* pMsg)
-	{
-		// bypass CMFCEditBrowseCtrl's code that handles Alt+Down and Alt+Right
-		return CEdit::PreTranslateMessage(pMsg);
-	}
-};
 
-std::unique_ptr<CMFCEditBrowseCtrl> CComboBoxBrowseCtrl::CreateEditControl()
+}
+
+CComboBoxBrowseCtrlEdit::~CComboBoxBrowseCtrlEdit()
+{
+
+}
+
+BOOL CComboBoxBrowseCtrlEdit::PreTranslateMessage(MSG* pMsg)
+{
+	// bypass CMFCEditBrowseCtrl's code that handles Alt+Down and Alt+Right
+	return CEdit::PreTranslateMessage(pMsg);
+}
+
+std::unique_ptr<CComboBoxBrowseCtrlEdit> CComboBoxBrowseCtrl::CreateEditControl()
 {
 #if _MSC_VER >= 1800
 	return std::make_unique<CComboBoxBrowseCtrlEdit>();

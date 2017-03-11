@@ -6,11 +6,26 @@
 #include <memory>
 #endif //#ifndef _MEMORY_
 
+#ifndef QUICKFIND_EXT_CLASS
+	#define QUICKFIND_EXT_CLASS
+#endif
+
+typedef CMFCEditBrowseCtrl	CComboBoxBrowseCtrlEditBase;
+
+class QUICKFIND_EXT_CLASS CComboBoxBrowseCtrlEdit : public CComboBoxBrowseCtrlEditBase
+{
+public:
+	CComboBoxBrowseCtrlEdit();
+	~CComboBoxBrowseCtrlEdit();
+public:
+	BOOL PreTranslateMessage(MSG* pMsg);
+};
+
 // CComboBoxBrowseCtrl
 
 typedef CComboBox	CComboBoxBrowseCtrlBase;
 
-class CComboBoxBrowseCtrl : public CComboBoxBrowseCtrlBase
+class QUICKFIND_EXT_CLASS CComboBoxBrowseCtrl : public CComboBoxBrowseCtrlBase
 {
 	DECLARE_DYNAMIC(CComboBoxBrowseCtrl)
 
@@ -18,13 +33,13 @@ public:
 	CComboBoxBrowseCtrl();
 	virtual ~CComboBoxBrowseCtrl();
 public:
-	CMFCEditBrowseCtrl*	GetEditControl() const;
+	CComboBoxBrowseCtrlEdit*	GetEditControl() const;
 protected:
 	virtual void Init();
 
-	std::unique_ptr<CMFCEditBrowseCtrl> m_pEdit;
+	std::unique_ptr<CComboBoxBrowseCtrlEdit> m_pEdit;
 
-	virtual std::unique_ptr<CMFCEditBrowseCtrl> CreateEditControl();
+	virtual std::unique_ptr<CComboBoxBrowseCtrlEdit> CreateEditControl();
 // Operations
 public:
 	void PreSubclassWindow() override;

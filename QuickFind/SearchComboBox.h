@@ -3,7 +3,7 @@
 
 typedef CComboBoxBrowseCtrl	CSearchComboBoxBase;
 
-class CSearchComboBox : public CSearchComboBoxBase
+class QUICKFIND_EXT_CLASS CSearchComboBox : public CSearchComboBoxBase
 {
 	DECLARE_DYNAMIC(CSearchComboBox)
 public:
@@ -14,7 +14,7 @@ public:
 protected:
 	void Init() override;
 
-	std::unique_ptr<CMFCEditBrowseCtrl> CreateEditControl() override;
+	std::unique_ptr<CComboBoxBrowseCtrlEdit> CreateEditControl() override;
 protected:
 	
 	DECLARE_MESSAGE_MAP()

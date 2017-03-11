@@ -16,14 +16,14 @@ CSearchComboBox::~CSearchComboBox()
 BEGIN_MESSAGE_MAP(CSearchComboBox, CSearchComboBoxBase)
 END_MESSAGE_MAP()
 
-class CSearchComboBoxEdit : public CMFCEditBrowseCtrl
+typedef CComboBoxBrowseCtrlEdit	CSearchComboBoxEditBase;
+
+class CSearchComboBoxEdit : public CSearchComboBoxEditBase
 {
 public:
 	void OnBrowse() override;
 
 	void OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButtonPressed, BOOL bIsButtonHot) override;
-
-	BOOL PreTranslateMessage(MSG* pMsg);
 
 	void Init();
 protected:
@@ -36,7 +36,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-BEGIN_MESSAGE_MAP(CSearchComboBoxEdit, CMFCEditBrowseCtrl)
+BEGIN_MESSAGE_MAP(CSearchComboBoxEdit, CSearchComboBoxEditBase)
 	ON_CONTROL_REFLECT_EX(EN_CHANGE, OnEnChange)
 END_MESSAGE_MAP()
 
@@ -46,7 +46,7 @@ void CSearchComboBoxEdit::OnBrowse()
 	ENSURE(GetSafeHwnd() != NULL);
 	SetWindowText(_T(""));
 	OnAfterUpdate();
-	CMFCEditBrowseCtrl::OnBrowse();
+	CSearchComboBoxEditBase::OnBrowse();
 }
 
 void CSearchComboBoxEdit::OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButtonPressed, BOOL bIsButtonHot)
@@ -74,12 +74,6 @@ void CSearchComboBoxEdit::OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButto
 
 		m_ImageBrowse.Draw(pDC, iImage, ptImage, ILD_NORMAL);
 	}
-}
-
-BOOL CSearchComboBoxEdit::PreTranslateMessage(MSG* pMsg)
-{
-	// bypass CMFCEditBrowseCtrl's code that handles Alt+Down and Alt+Right
-	return CEdit::PreTranslateMessage(pMsg);
 }
 
 void CSearchComboBoxEdit::Init()
@@ -113,8 +107,12 @@ void CSearchComboBoxEdit::InitImages()
 
 void CSearchComboBoxEdit::OnAfterUpdate()
 {
-	CMFCEditBrowseCtrl::OnAfterUpdate();
+	CSearchComboBoxEditBase::OnAfterUpdate();
 	RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	CSearchComboBox* pParent = STATIC_DOWNCAST(CSearchComboBox, GetParent());
+	auto pComboParent = pParent->GetParent();
+	if (pComboParent->GetSafeHwnd())
+		pComboParent->SendMessage(WM_COMMAND, MAKEWPARAM(pParent->GetDlgCtrlID(), CBN_EDITCHANGE), (LPARAM)pParent->GetSafeHwnd());
 }
 
 BOOL CSearchComboBoxEdit::OnEnChange()
@@ -123,7 +121,7 @@ BOOL CSearchComboBoxEdit::OnEnChange()
 	return FALSE;	// allow parent to handle it too
 }
 
-std::unique_ptr<CMFCEditBrowseCtrl> CSearchComboBox::CreateEditControl()
+std::unique_ptr<CComboBoxBrowseCtrlEdit> CSearchComboBox::CreateEditControl()
 {
 #if _MSC_VER >= 1800
 	return std::make_unique<CSearchComboBoxEdit>();

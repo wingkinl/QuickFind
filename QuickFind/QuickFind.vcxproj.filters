@@ -129,9 +129,6 @@
     <Image Include="res\ReplaceNext.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\VS2015\QuickFind\DlgTest\res\FindClose.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="res\FindClose.ico">
       <Filter>Resource Files</Filter>
     </Image>

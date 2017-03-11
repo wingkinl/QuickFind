@@ -6,22 +6,6 @@
 #include "afxdialogex.h"
 #include "Resource.h"
 
-
-QUICKFIND_INFO::QUICKFIND_INFO()
-{
-	dwFlags = FlagsInitShowOptions;
-	pWndOwner = nullptr;
-}
-
-QUICKFIND_INFO& QUICKFIND_INFO::operator=(const QUICKFIND_INFO& rhs)
-{
-	dwFlags = rhs.dwFlags;
-	pWndOwner = rhs.pWndOwner;
-	saSearch.Copy(rhs.saSearch);
-	saReplace.Copy(rhs.saReplace);
-	return *this;
-}
-
 // CQuickFindWnd dialog
 
 IMPLEMENT_DYNAMIC(CQuickFindWnd, CQuickFindWndBase)
@@ -33,8 +17,7 @@ CQuickFindWnd::CQuickFindWnd()
 	m_nLastDlgHeight = 0;
 	m_bShowReplaceUI = FALSE;
 	m_bShowOptionsUI = TRUE;
-	m_nSecondRowCtrlsTop = -1;
-	m_nThirdRowCtrlsTop = -1;
+	ZeroMemory(&m_arrUIRows, sizeof(m_arrUIRows));
 	m_hAccel = nullptr;
 	m_pAccelTable = nullptr;
 	m_nAccelSize = 0;
@@ -62,14 +45,21 @@ void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_QUICKFIND_SCOPE, m_wndScope);
 }
 
+static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
+	ON_WM_NCDESTROY()
 	ON_WM_PAINT()
 	ON_WM_NCHITTEST()
 	ON_WM_SIZING()
 	ON_WM_SIZE()
 	ON_WM_GETMINMAXINFO()
-	ON_BN_CLICKED(IDOK, &OnButtonFindActionMenu)
+	ON_BN_CLICKED(IDOK, &OnButtonFindAction)
+	ON_COMMAND(ID_QUICKFIND_MATCHCASE, &OnMatchCase)
+	ON_COMMAND(ID_QUICKFIND_MATCHWORD, &OnMatchWord)
+	ON_COMMAND(ID_QUICKFIND_REGEX, &OnUseRegEx)
+	ON_CBN_SELCHANGE(IDC_QUICK_FIND, &OnSelChangeFind)
+	ON_CBN_EDITCHANGE(IDC_QUICK_FIND, &OnEditChangeFind)
 	ON_COMMAND(ID_QUICKFIND_NEXT, &OnFindNext)
 	ON_COMMAND(ID_QUICKFIND_PREVIOUS, &OnFindPrevious)
 	ON_COMMAND(ID_QUICKFIND_ALL, &OnFindAll)
@@ -115,6 +105,12 @@ BOOL CQuickFindWnd::FindAccelerator(UINT uiCmd, CString& str) const
 	return bFound;
 }
 
+void CQuickFindWnd::PostNcDestroy()
+{
+	ASSERT(m_hWnd == NULL);
+	delete this;
+}
+
 BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) const
 {
 	auto resName = MAKEINTRESOURCE(nID);
@@ -150,6 +146,20 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) co
 	return TRUE;
 }
 
+BOOL CQuickFindWnd::InitCombo(CComboBox& combo, const CStringArray& saText)
+{
+	combo.ResetContent();
+	for (INT_PTR ii = 0; ii < saText.GetSize(); ++ii)
+	{
+		combo.AddString(saText[ii]);
+	}
+	if (!saText.IsEmpty())
+	{
+		combo.SetCurSel(0);
+	}
+	return TRUE;
+}
+
 BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info)
 {
 	ASSERT(info.pWndOwner);
@@ -172,13 +182,15 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_szMaxDlgSize = rectDlg.Size();
 	m_nLastDlgHeight = m_szMaxDlgSize.cy;
 
-	m_wndReplace.GetWindowRect(rect);
-	ScreenToClient(rect);
-	m_nSecondRowCtrlsTop = rect.top;
-
-	m_wndMatchCase.GetWindowRect(rect);
-	ScreenToClient(rect);
-	m_nThirdRowCtrlsTop = rect.top;
+	CWnd* arrWndRows[] = {&m_wndFind, &m_wndReplace, &m_wndMatchCase};
+	static_assert(_countof(m_arrUIRows) == _countof(arrWndRows), "UI design breaking change?");
+	for (int nRow = 0; nRow < _countof(arrWndRows); ++nRow)
+	{
+		arrWndRows[nRow]->GetWindowRect(rect);
+		ScreenToClient(rect);
+		m_arrUIRows[nRow].top = rect.top;
+		m_arrUIRows[nRow].bottom = rect.bottom;
+	}
 
 	m_hAccel = LoadAccelerators(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_QUICKFIND_ACCEL));
 	ASSERT(m_hAccel != NULL);
@@ -196,7 +208,7 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_menuFindAction.LoadMenu(IDR_QUICKFIND_ACTION);
 	m_wndFindAction.m_hMenu = m_menuFindAction.GetSubMenu(0)->GetSafeHmenu();
 	m_wndFindAction.m_bOSMenu = FALSE;
-	m_nCurFindActionID = ID_QUICKFIND_NEXT;
+	m_nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
 	VERIFY(InitButton(m_wndFindAction, m_nCurFindActionID));
 	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE));
 	VERIFY(InitButton(m_wndReplaceNext, ID_QUICKFIND_REPLACENEXT));
@@ -205,17 +217,26 @@ BOOL CQuickFindWnd::OnInitDialog()
 	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD));
 	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX));
 
-	m_bShowReplaceUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowReplace);
-	m_bShowOptionsUI = !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowOptions);
-	if (!m_bShowReplaceUI || !m_bShowOptionsUI)
-	{
-		CalcLayout(&rectDlg);
-		CSize szDlg = rectDlg.Size();
-		SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
-		m_nLastDlgHeight = szDlg.cy;
-	}
+	VERIFY(InitCombo(m_wndFind, m_info.saSearch));
+	VERIFY(InitCombo(m_wndReplace, m_info.saReplace));
+	m_wndReplace.SetCueBanner(L"Replace...");
 
+	SwitchUI(m_info.IsInitShowAsReplace(), m_info.IsInitShowOptions());
 	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+CString CQuickFindWnd::GetFindString() const
+{
+	CString strText;
+	m_wndFind.GetWindowText(strText);
+	return strText;
+}
+
+CString CQuickFindWnd::GetReplaceString() const
+{
+	CString strText;
+	m_wndReplace.GetWindowText(strText);
+	return strText;
 }
 
 void CQuickFindWnd::OnPaint()
@@ -256,38 +277,6 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 	return CQuickFindWndBase::OnNcHitTest(point);
 }
 
-void CQuickFindWnd::CalcLayout(LPRECT pRect)
-{
-	if (m_bShowReplaceUI && m_bShowOptionsUI)
-	{
-		pRect->bottom = pRect->top + m_szMaxDlgSize.cy;
-	}
-	else if (m_bShowReplaceUI || m_bShowOptionsUI)
-	{
-		CWnd* pWnd = m_bShowReplaceUI ? (CWnd*)&m_wndReplace : &m_wndMatchCase;
-		CRect rect;
-		pWnd->GetWindowRect(rect);
-		int nHeight = rect.Height();
-		GetClientRect(rect);
-		rect.bottom = m_nSecondRowCtrlsTop + nHeight;
-		ClientToScreen(rect);
-		pRect->bottom = rect.bottom + 3;
-	}
-	else
-	{
-		CRect rect;
-		m_wndFind.GetWindowRect(rect);
-		pRect->bottom = rect.bottom + 3;
-	}
-	ShowReplaceUI(m_bShowReplaceUI);
-	ShowOptionsUI(m_bShowOptionsUI);
-}
-
-BOOL CQuickFindWnd::IsInitShowAsReplace() const
-{
-	return !!(m_info.dwFlags & QUICKFIND_INFO::FlagsInitShowReplace);
-}
-
 void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 {
 	CQuickFindWndBase::OnSizing(fwSide, pRect);
@@ -298,46 +287,41 @@ void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 	GetWindowRect(rectOldWnd);
 
 	CRect rect(pRect);
-	//int nYDelta = rect.Height() - rectOldWnd.Height();
-	//if (nYDelta == 0)
-	//	return;
-	int nYDelta = rect.Height() - m_nLastDlgHeight;
-	if (abs(nYDelta) < 5)
+	int nYDelta = rect.Height() - rectOldWnd.Height();
+	if (nYDelta == 0)
 		return;
-	if (m_bShowReplaceUI && m_bShowOptionsUI)
+	
+	// snap to the last row of controls
+	ScreenToClient(rect);
+	for (int nRow = _countof(m_arrUIRows)-1; nRow >= 0; --nRow)
 	{
-		// you can't be any larger in height
-		ASSERT(nYDelta < 0);
-		if (IsInitShowAsReplace())
-			m_bShowOptionsUI = FALSE;
-		else
-			m_bShowReplaceUI = FALSE;
+		if (rect.bottom >= m_arrUIRows[nRow].bottom)
+		{
+			rect.bottom = m_arrUIRows[nRow].bottom + m_arrUIRows[0].top;
+			ClientToScreen(rect);
+			*pRect = rect;
+			BOOL bShowReplaceUI = m_bShowReplaceUI;
+			BOOL bShowOptionsUI = m_bShowOptionsUI;
+			switch (nRow)
+			{
+			case 0:
+				bShowReplaceUI = bShowOptionsUI = FALSE;
+				break;
+			case 1:
+				bShowReplaceUI = m_info.IsInitShowAsReplace();
+				bShowOptionsUI = !bShowReplaceUI;
+				break;
+			case 2:
+				bShowReplaceUI = bShowOptionsUI = TRUE;
+				break;
+			}
+			if (bShowReplaceUI ^ m_bShowReplaceUI || bShowOptionsUI ^ m_bShowOptionsUI )
+			{
+				SwitchUI(bShowReplaceUI, bShowOptionsUI);
+			}
+			return;
+		}
 	}
-	else if (m_bShowReplaceUI)
-	{
-		if (nYDelta < 0)
-			m_bShowReplaceUI = FALSE;
-		else
-			m_bShowOptionsUI = TRUE;
-	}
-	else if (m_bShowOptionsUI)
-	{
-		if (nYDelta < 0)
-			m_bShowOptionsUI = FALSE;
-		else
-			m_bShowReplaceUI = TRUE;
-	}
-	else
-	{
-		// you can't be any smaller in height
-		ASSERT(nYDelta > 0);
-		if (IsInitShowAsReplace())
-			m_bShowReplaceUI = TRUE;
-		else
-			m_bShowOptionsUI = TRUE;
-	}
-	CalcLayout(pRect);
-	m_nLastDlgHeight = pRect->bottom - pRect->top;
 }
 
 void CQuickFindWnd::ShowReplaceUI(BOOL bShow)
@@ -352,7 +336,7 @@ void CQuickFindWnd::ShowReplaceUI(BOOL bShow)
 void CQuickFindWnd::ShowOptionsUI(BOOL bShow)
 {
 	CWnd* arrWnds[] ={ &m_wndMatchCase, &m_wndMatchWord, &m_wndRegEx, &m_wndScope };
-	BOOL bMoveWnd = bShow && !IsInitShowAsReplace();
+	BOOL bMoveWnd = bShow;
 	for (auto pWnd : arrWnds)
 	{
 		if (bMoveWnd)
@@ -360,10 +344,10 @@ void CQuickFindWnd::ShowOptionsUI(BOOL bShow)
 			CRect rect;
 			pWnd->GetWindowRect(rect);
 			ScreenToClient(rect);
-			rect.top = m_bShowReplaceUI ? m_nThirdRowCtrlsTop : m_nSecondRowCtrlsTop;
+			rect.top = m_bShowReplaceUI ? m_arrUIRows[2].top : m_arrUIRows[1].top;
 			pWnd->SetWindowPos(nullptr, rect.left, rect.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
 		}
-		pWnd->ShowWindow(bShow);
+		pWnd->ShowWindow(bShow ? SW_SHOWNA : SW_HIDE);
 	}
 }
 
@@ -450,7 +434,7 @@ BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
 	return CQuickFindWndBase::PreTranslateMessage(pMsg);
 }
 
-void CQuickFindWnd::OnButtonFindActionMenu()
+void CQuickFindWnd::OnButtonFindAction()
 {
 	if (m_wndFindAction.m_nMenuResult && m_wndFindAction.m_nMenuResult != m_nCurFindActionID)
 	{
@@ -460,9 +444,11 @@ void CQuickFindWnd::OnButtonFindActionMenu()
 	switch (m_nCurFindActionID)
 	{
 	case ID_QUICKFIND_NEXT:
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
 		OnFindNext();
 		break;
 	case ID_QUICKFIND_PREVIOUS:
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
 		OnFindPrevious();
 		break;
 	case ID_QUICKFIND_ALL:
@@ -474,58 +460,133 @@ void CQuickFindWnd::OnButtonFindActionMenu()
 	}
 }
 
+void CQuickFindWnd::OnMatchCase()
+{
+	if (m_wndMatchCase.GetCheck() != BST_UNCHECKED)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchCase;
+	else
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchCase;
+}
+
+void CQuickFindWnd::OnMatchWord()
+{
+	if (m_wndMatchWord.GetCheck() != BST_UNCHECKED)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchWord;
+	else
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchWord;
+}
+
+void CQuickFindWnd::OnUseRegEx()
+{
+	if (m_wndRegEx.GetCheck() != BST_UNCHECKED)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsUseRegEx;
+	else
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsUseRegEx;
+}
+
+void CQuickFindWnd::OnSelChangeFind()
+{
+	NotifyOwner(QuickFindCmdFindTextChange);
+}
+
+void CQuickFindWnd::OnEditChangeFind()
+{
+	NotifyOwner(QuickFindCmdFindTextChange);
+}
+
+static void _MergeTextInCombo(CComboBox& combo)
+{
+	// TODO
+	int nCurSel = combo.GetCurSel();
+	CString strText;
+	combo.GetWindowText(strText);
+}
+
+void CQuickFindWnd::MergeFindTextList()
+{
+	_MergeTextInCombo(m_wndFind);
+}
+
+void CQuickFindWnd::MergeReplaceTextList()
+{
+	_MergeTextInCombo(m_wndReplace);
+}
+
 void CQuickFindWnd::OnFindNext()
 {
-
+	MergeFindTextList();
+	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindPrevious()
 {
-
+	MergeFindTextList();
+	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindAll()
 {
-
+	MergeFindTextList();
+	NotifyOwner(QuickFindCmdFindAll);
 }
 
 void CQuickFindWnd::OnReplaceNext()
 {
-
+	MergeReplaceTextList();
+	NotifyOwner(QuickFindCmdReplace);
 }
 
 void CQuickFindWnd::OnReplaceAll()
 {
-
+	MergeReplaceTextList();
+	NotifyOwner(QuickFindCmdReplaceAll);
 }
 
-void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace)
+void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 {
 	m_bShowReplaceUI = bShowAsReplace;
-	m_bShowOptionsUI = TRUE;
-	CRect rectDlg;
+	m_bShowOptionsUI = bShowOptions;
+	CRect rectDlg, rectClient;
 	GetWindowRect(rectDlg);
+	GetClientRect(rectClient);
+	int nRows = (m_bShowOptionsUI ? 1 : 0) + (m_bShowReplaceUI ? 1 : 0);
+	rectClient.bottom = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top;
+	ClientToScreen(rectClient);
+	rectDlg.bottom = rectClient.bottom;
 
-	if (bShowAsReplace)
-		m_info.dwFlags |= QUICKFIND_INFO::FlagsInitShowReplace;
-	else
-		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsInitShowReplace;
-
-	CalcLayout(&rectDlg);
+	ShowReplaceUI(m_bShowReplaceUI);
+	ShowOptionsUI(m_bShowOptionsUI);
 	CSize szDlg = rectDlg.Size();
 	SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
 }
 
+LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd)
+{
+	if (m_info.pWndOwner->GetSafeHwnd())
+		return m_info.pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)this);
+	return 0;
+}
+
 void CQuickFindWnd::OnEditFind()
 {
-	if (!IsInitShowAsReplace() && m_bShowOptionsUI)
+	if (!m_info.IsInitShowAsReplace() && m_bShowOptionsUI)
 		return;
-	SwitchUI(FALSE);
+	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsInitShowReplace;
+	SwitchUI(FALSE, TRUE);
+	m_wndFind.SetFocus();
 }
 
 void CQuickFindWnd::OnEditReplace()
 {
-	if (IsInitShowAsReplace() && m_bShowOptionsUI)
+	if (m_info.IsInitShowAsReplace() && m_bShowOptionsUI)
 		return;
-	SwitchUI(TRUE);
+	m_info.dwFlags |= QUICKFIND_INFO::FlagsInitShowReplace;
+	SwitchUI(TRUE, TRUE);
+	m_wndFind.SetFocus();
+}
+
+void CQuickFindWnd::OnNcDestroy()
+{
+	NotifyOwner(QuickFindCmdTerminating);
+	CQuickFindWndBase::OnNcDestroy();
 }

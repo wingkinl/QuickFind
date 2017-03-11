@@ -40,20 +40,14 @@ CQuickFindWndDemo::CQuickFindWndDemo()
 }
 
 BEGIN_MESSAGE_MAP(CQuickFindWndDemo, CQuickFindWnd)
-	ON_WM_NCDESTROY()
 END_MESSAGE_MAP()
 
-void CQuickFindWndDemo::OnNcDestroy()
-{
-	_quickfindState.pQuickFindWnd = nullptr;
-
-	//Let the base class do its thing
-	__super::OnNcDestroy();
-}
 
 // CQuickFindView
 
 IMPLEMENT_DYNCREATE(CQuickFindView, CRichEditView)
+
+static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindView, CRichEditView)
 	ON_WM_DESTROY()
@@ -61,6 +55,7 @@ BEGIN_MESSAGE_MAP(CQuickFindView, CRichEditView)
 	ON_WM_RBUTTONUP()
 	ON_COMMAND(ID_EDIT_FIND, &CQuickFindView::OnEditFind)
 	ON_COMMAND(ID_EDIT_REPLACE, &CQuickFindView::OnEditReplace)
+	ON_REGISTERED_MESSAGE(_QUICKFINDMSG, &CQuickFindView::OnQuickFindCmd)
 END_MESSAGE_MAP()
 
 // CQuickFindView construction/destruction
@@ -105,6 +100,9 @@ void CQuickFindView::OnDestroy()
       pActiveItem->Deactivate();
       ASSERT(GetDocument()->GetInPlaceActiveItem(this) == NULL);
    }
+   if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()))
+	   _quickfindState.pQuickFindWnd->SendMessage(WM_CLOSE);
+   _quickfindState.pQuickFindWnd = nullptr;
    CRichEditView::OnDestroy();
 }
 
@@ -170,14 +168,15 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 		// TODO: need to switch UI
 		_quickfindState.pQuickFindWnd->SetActiveWindow();
 		_quickfindState.pQuickFindWnd->SendMessage(WM_COMMAND, bFind ? ID_EDIT_FIND : ID_EDIT_REPLACE);
+		_quickfindState.pQuickFindWnd->SetParent(this);
 		_quickfindState.pQuickFindWnd->ShowWindow(SW_SHOW);
 		return;
 	}
 	CString strFind = GetRichEditCtrl().GetSelText();
 	// if selection is empty or spans multiple lines use old find text
-	if (strFind.IsEmpty() || (strFind.FindOneOf(_T("\n\r")) != -1))
+	if (!strFind.IsEmpty() && strFind.FindOneOf(_T("\n\r")) == -1)
 	{
-		
+		QUICKFIND_INFO::MergeString(_quickfindState.info.saSearch, strFind);
 	}
 	_quickfindState.pQuickFindWnd = CreateFindReplaceWindow();
 	ASSERT(_quickfindState.pQuickFindWnd);
@@ -192,5 +191,61 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	_quickfindState.pQuickFindWnd->SetActiveWindow();
 	_quickfindState.pQuickFindWnd->ShowWindow(SW_SHOW);
 	ASSERT_VALID(this);
+}
+
+BOOL CQuickFindView::OnFind(CQuickFindWndDemo* pQuickFindWnd)
+{
+	ASSERT_VALID(this);
+	ASSERT_VALID(pQuickFindWnd);
+	auto& info = pQuickFindWnd->GetParams();
+	_quickfindState.info.dwFlags = info.dwFlags;
+	BOOL bRet = FindText(pQuickFindWnd->GetFindString(), info.IsMatchCase(), info.IsMatchWholeWord(), info.IsFindReplaceNext());
+	return bRet;
+}
+
+BOOL CQuickFindView::OnFindAll(CQuickFindWndDemo* pQuickFindWnd)
+{
+	// TODO
+	return TRUE;
+}
+
+BOOL CQuickFindView::OnReplace(CQuickFindWndDemo* pQuickFindWnd)
+{
+	// TODO
+	return TRUE;
+}
+
+BOOL CQuickFindView::OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd)
+{
+	// TODO
+	return TRUE;
+}
+
+LRESULT CQuickFindView::OnQuickFindCmd(WPARAM wp, LPARAM lp)
+{
+	QuickFindCmd cmd = static_cast<QuickFindCmd>(wp);
+	CQuickFindWndDemo* pQuickFindWnd = reinterpret_cast<CQuickFindWndDemo*>(lp);
+	ASSERT_VALID(pQuickFindWnd);
+	ASSERT(!_quickfindState.pQuickFindWnd || pQuickFindWnd == _quickfindState.pQuickFindWnd);
+	auto& info = pQuickFindWnd->GetParams();
+	switch (cmd)
+	{
+	case QuickFindCmdTerminating:
+		_quickfindState.pQuickFindWnd = nullptr;
+		break;
+	case QuickFindCmdFind:
+		return (LRESULT)OnFind(pQuickFindWnd);
+	case QuickFindCmdFindAll:
+		return (LRESULT)OnFindAll(pQuickFindWnd);
+	case QuickFindCmdReplace:
+		return (LRESULT)OnReplace(pQuickFindWnd);
+	case QuickFindCmdReplaceAll:
+		return (LRESULT)OnReplaceAll(pQuickFindWnd);
+	case QuickFindCmdFindTextChange:
+		return (LRESULT)OnFind(pQuickFindWnd);
+	default:
+		break;
+	}
+	return 0;
 }
 

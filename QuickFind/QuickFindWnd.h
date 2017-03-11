@@ -3,34 +3,109 @@
 #include "afxbutton.h"
 #include "SearchComboBox.h"
 
+enum QuickFindCmd
+{
+	QuickFindCmdFind			= 0,
+	QuickFindCmdFindAll			= 1,
+	QuickFindCmdReplace			= 2,
+	QuickFindCmdReplaceAll		= 3,
+	QuickFindCmdFindTextChange	= 4,
+
+	QuickFindCmdTerminating		= 10,
+};
 #define QUICKFINDMSGSTRING  _T("QuickFindReplace")
 
 class QUICKFIND_INFO
 {
 public:
 	enum Flags {
-		FlagsInitShowReplace	= 0x00000001,
-		FlagsInitShowOptions	= 0x00000002,
-		FlagsShowScope			= 0x00000004,
-		FlagsMatchCase			= 0x00010000,
-		FlagsMatchWord			= 0x00020000,
-		FlagsUseRegEx			= 0x00040000,
+		FlagsInitShowReplace		= 0x00000001,
+		FlagsInitShowOptions		= 0x00000002,
+		FlagsShowScope				= 0x00000004,
+		FlagsMatchCase				= 0x00000100,
+		FlagsMatchWord				= 0x00000200,
+		FlagsUseRegEx				= 0x00000400,
+		FlagsFindReplacePrevious	= 0x00010000,
 	};
 	DWORD			dwFlags;
 	CWnd*			pWndOwner;
 	CStringArray	saSearch;
 	CStringArray	saReplace;
 
-	QUICKFIND_INFO();
-	
-	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs);
+	QUICKFIND_INFO()
+	{
+		dwFlags = FlagsInitShowOptions;
+		pWndOwner = nullptr;
+	}
+
+	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs)
+	{
+		dwFlags = rhs.dwFlags;
+		pWndOwner = rhs.pWndOwner;
+		saSearch.Copy(rhs.saSearch);
+		saReplace.Copy(rhs.saReplace);
+		return *this;
+	}
+
+	inline BOOL IsInitShowAsReplace() const
+	{
+		return !!(dwFlags & FlagsInitShowReplace);
+	}
+
+	inline BOOL IsInitShowOptions() const
+	{
+		return !!(dwFlags & FlagsInitShowOptions);
+	}
+
+	inline BOOL IsShowScope() const
+	{
+		return !!(dwFlags & FlagsShowScope);
+	}
+
+	inline BOOL IsMatchCase() const
+	{
+		return !!(dwFlags & FlagsMatchCase);
+	}
+
+	inline BOOL IsMatchWholeWord() const
+	{
+		return !!(dwFlags & FlagsMatchWord);
+	}
+
+	inline BOOL IsUseRegEx() const
+	{
+		return !!(dwFlags & FlagsUseRegEx);
+	}
+
+	inline BOOL IsFindReplacePrevious() const
+	{
+		return !!(dwFlags & FlagsFindReplacePrevious);
+	}
+
+	inline BOOL IsFindReplaceNext() const
+	{
+		return !IsFindReplacePrevious();
+	}
+
+	static void MergeString(CStringArray& sa, LPCTSTR pszTextToMerge)
+	{
+		for (INT_PTR ii = 0; ii < sa.GetSize(); ++ii)
+		{
+			if (sa[ii].Compare(pszTextToMerge) == 0)
+			{
+				sa.RemoveAt(ii);
+				break;
+			}
+		}
+		sa.InsertAt(0, pszTextToMerge);
+	}
 };
 
 // CQuickFindWnd dialog
 
 typedef CDialogEx	CQuickFindWndBase;
 
-class CQuickFindWnd : public CQuickFindWndBase
+class QUICKFIND_EXT_CLASS CQuickFindWnd : public CQuickFindWndBase
 {
 	DECLARE_DYNAMIC(CQuickFindWnd)
 
@@ -43,28 +118,35 @@ public:
 	enum { IDD = IDD_QUICK_FIND_REPLACE };
 #endif
 public:
-	
-public:
 	virtual BOOL Create(const QUICKFIND_INFO& info);
 
 	BOOL OnInitDialog() override;
 
 	const QUICKFIND_INFO& GetParams();
+
+	CString GetFindString() const;
+
+	CString GetReplaceString() const;
 protected:
 	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
+
+	BOOL InitCombo(CComboBox& combo, const CStringArray& saText);
 
 	BOOL PreTranslateMessage(MSG* pMsg) override;
 
 	BOOL FindAccelerator(UINT uiCmd, CString& str) const;
 
-	void CalcLayout(LPRECT pRect);
-
-	BOOL IsInitShowAsReplace() const;
+	void PostNcDestroy() override;
 private:
 	void ShowReplaceUI(BOOL bShow);
 	void ShowOptionsUI(BOOL bShow);
 
-	void SwitchUI(BOOL bShowAsReplace);
+	void SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions);
+
+	LRESULT NotifyOwner(QuickFindCmd cmd);
+
+	void MergeFindTextList();
+	void MergeReplaceTextList();
 protected:
 	CSearchComboBox	m_wndFind;	
 	
@@ -88,8 +170,12 @@ protected:
 	BOOL			m_bShowReplaceUI;
 	BOOL			m_bShowOptionsUI;
 
-	int				m_nSecondRowCtrlsTop;
-	int				m_nThirdRowCtrlsTop;
+	struct Row
+	{
+		LONG top;
+		LONG bottom;
+	};
+	Row				m_arrUIRows[3];
 
 	CSize			m_szMaxDlgSize;
 
@@ -106,7 +192,12 @@ protected:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
-	afx_msg void OnButtonFindActionMenu();
+	afx_msg void OnButtonFindAction();
+	afx_msg void OnMatchCase();
+	afx_msg void OnMatchWord();
+	afx_msg void OnUseRegEx();
+	afx_msg void OnSelChangeFind();
+	afx_msg void OnEditChangeFind();
 	afx_msg void OnFindNext();
 	afx_msg void OnFindPrevious();
 	afx_msg void OnFindAll();
@@ -114,6 +205,7 @@ protected:
 	afx_msg void OnReplaceAll();
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
+	afx_msg void OnNcDestroy();
 
 	DECLARE_MESSAGE_MAP()
 };
