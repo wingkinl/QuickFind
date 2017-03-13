@@ -160,11 +160,10 @@ BOOL CQuickFindWnd::InitCombo(CComboBox& combo, const CStringArray& saText)
 	return TRUE;
 }
 
-BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info)
+BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 {
-	ASSERT(info.pWndOwner);
 	m_info = info;
-	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, m_info.pWndOwner);
+	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pParentWnd);
 	if (!bRet)
 		return FALSE;
 	return TRUE;
@@ -494,51 +493,80 @@ void CQuickFindWnd::OnEditChangeFind()
 	NotifyOwner(QuickFindCmdFindTextChange);
 }
 
-static void _MergeTextInCombo(CComboBox& combo)
+static void _PromoteTextInCombo(CComboBox& combo)
 {
-	// TODO
-	int nCurSel = combo.GetCurSel();
-	CString strText;
-	combo.GetWindowText(strText);
+	int nCurSel = combo.GetCurSel();	
+	if (nCurSel >= 0)
+	{
+		// no need to promote if already the first one
+		if (nCurSel > 0)
+		{
+			CString strItem;
+			combo.GetLBText(nCurSel, strItem);
+			combo.DeleteString(nCurSel);
+			combo.InsertString(0, strItem);
+			combo.SetCurSel(0);
+		}
+	}
+	else if (combo.GetWindowTextLength())
+	{
+		CString strText;
+		combo.GetWindowText(strText);
+		int ii, nCount = combo.GetCount();
+		for (ii = 0; ii < nCount; ii++)
+		{
+			CString strTemp;
+			combo.GetLBText(ii, strTemp);
+			if (!strText.Compare(strTemp))
+			{
+				if (ii)
+					combo.DeleteString(ii);
+				break;
+			}
+		}
+		if (ii || nCount == 0)
+			combo.InsertString(0, strText);
+		combo.SetCurSel(0);
+	}
 }
 
-void CQuickFindWnd::MergeFindTextList()
+void CQuickFindWnd::PromoteFindTextList()
 {
-	_MergeTextInCombo(m_wndFind);
+	_PromoteTextInCombo(m_wndFind);
 }
 
-void CQuickFindWnd::MergeReplaceTextList()
+void CQuickFindWnd::PromoteReplaceTextList()
 {
-	_MergeTextInCombo(m_wndReplace);
+	_PromoteTextInCombo(m_wndReplace);
 }
 
 void CQuickFindWnd::OnFindNext()
 {
-	MergeFindTextList();
+	PromoteFindTextList();
 	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindPrevious()
 {
-	MergeFindTextList();
+	PromoteFindTextList();
 	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindAll()
 {
-	MergeFindTextList();
+	PromoteFindTextList();
 	NotifyOwner(QuickFindCmdFindAll);
 }
 
 void CQuickFindWnd::OnReplaceNext()
 {
-	MergeReplaceTextList();
+	PromoteReplaceTextList();
 	NotifyOwner(QuickFindCmdReplace);
 }
 
 void CQuickFindWnd::OnReplaceAll()
 {
-	MergeReplaceTextList();
+	PromoteReplaceTextList();
 	NotifyOwner(QuickFindCmdReplaceAll);
 }
 
@@ -562,8 +590,9 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 
 LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd)
 {
-	if (m_info.pWndOwner->GetSafeHwnd())
-		return m_info.pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)this);
+	auto pWndOwner = GetOwner();
+	if (pWndOwner->GetSafeHwnd())
+		return pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)this);
 	return 0;
 }
 

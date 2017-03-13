@@ -165,7 +165,6 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 {
 	if (_quickfindState.pQuickFindWnd)
 	{
-		// TODO: need to switch UI
 		_quickfindState.pQuickFindWnd->SetActiveWindow();
 		_quickfindState.pQuickFindWnd->SendMessage(WM_COMMAND, bFind ? ID_EDIT_FIND : ID_EDIT_REPLACE);
 		_quickfindState.pQuickFindWnd->SetParent(this);
@@ -176,12 +175,11 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	// if selection is empty or spans multiple lines use old find text
 	if (!strFind.IsEmpty() && strFind.FindOneOf(_T("\n\r")) == -1)
 	{
-		QUICKFIND_INFO::MergeString(_quickfindState.info.saSearch, strFind);
+		_quickfindState.info.PromoteStringInArray(strFind);
 	}
 	_quickfindState.pQuickFindWnd = CreateFindReplaceWindow();
 	ASSERT(_quickfindState.pQuickFindWnd);
-	_quickfindState.info.pWndOwner = this;
-	if (!_quickfindState.pQuickFindWnd->Create(_quickfindState.info))
+	if (!_quickfindState.pQuickFindWnd->Create(_quickfindState.info, this))
 	{
 		_quickfindState.pQuickFindWnd = nullptr;
 		ASSERT_VALID(this);

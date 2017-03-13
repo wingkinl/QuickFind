@@ -28,20 +28,17 @@ public:
 		FlagsFindReplacePrevious	= 0x00010000,
 	};
 	DWORD			dwFlags;
-	CWnd*			pWndOwner;
 	CStringArray	saSearch;
 	CStringArray	saReplace;
 
 	QUICKFIND_INFO()
 	{
 		dwFlags = FlagsInitShowOptions;
-		pWndOwner = nullptr;
 	}
 
 	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs)
 	{
 		dwFlags = rhs.dwFlags;
-		pWndOwner = rhs.pWndOwner;
 		saSearch.Copy(rhs.saSearch);
 		saReplace.Copy(rhs.saReplace);
 		return *this;
@@ -87,7 +84,12 @@ public:
 		return !IsFindReplacePrevious();
 	}
 
-	static void MergeString(CStringArray& sa, LPCTSTR pszTextToMerge)
+	void PromoteStringInArray(LPCTSTR pszText, BOOL bFindStringArray = TRUE)
+	{
+		PromoteStringInArray(bFindStringArray ? saSearch : saReplace, pszText);
+	}
+protected:
+	static void PromoteStringInArray(CStringArray& sa, LPCTSTR pszTextToMerge)
 	{
 		for (INT_PTR ii = 0; ii < sa.GetSize(); ++ii)
 		{
@@ -118,7 +120,7 @@ public:
 	enum { IDD = IDD_QUICK_FIND_REPLACE };
 #endif
 public:
-	virtual BOOL Create(const QUICKFIND_INFO& info);
+	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
 
 	BOOL OnInitDialog() override;
 
@@ -129,7 +131,7 @@ public:
 	CString GetReplaceString() const;
 protected:
 	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
-
+	
 	BOOL InitCombo(CComboBox& combo, const CStringArray& saText);
 
 	BOOL PreTranslateMessage(MSG* pMsg) override;
@@ -145,8 +147,8 @@ private:
 
 	LRESULT NotifyOwner(QuickFindCmd cmd);
 
-	void MergeFindTextList();
-	void MergeReplaceTextList();
+	void PromoteFindTextList();
+	void PromoteReplaceTextList();
 protected:
 	CSearchComboBox	m_wndFind;	
 	
