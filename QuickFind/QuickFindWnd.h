@@ -55,37 +55,37 @@ public:
 
 	inline BOOL IsInitShowAsReplace() const
 	{
-		return !!(dwFlags & FlagsInitShowReplace);
+		return (dwFlags & FlagsInitShowReplace) != 0;
 	}
 
 	inline BOOL IsInitShowOptions() const
 	{
-		return !!(dwFlags & FlagsInitShowOptions);
+		return (dwFlags & FlagsInitShowOptions) != 0;
 	}
 
 	inline BOOL IsShowScope() const
 	{
-		return !!(dwFlags & FlagsShowScope);
+		return (dwFlags & FlagsShowScope) != 0;
 	}
 
 	inline BOOL IsMatchCase() const
 	{
-		return !!(dwFlags & FlagsMatchCase);
+		return (dwFlags & FlagsMatchCase) != 0;
 	}
 
 	inline BOOL IsMatchWholeWord() const
 	{
-		return !!(dwFlags & FlagsMatchWord);
+		return (dwFlags & FlagsMatchWord) != 0;
 	}
 
 	inline BOOL IsUseRegEx() const
 	{
-		return !!(dwFlags & FlagsUseRegEx);
+		return (dwFlags & FlagsUseRegEx) != 0;
 	}
 
 	inline BOOL IsFindReplacePrevious() const
 	{
-		return !!(dwFlags & FlagsFindReplacePrevious);
+		return (dwFlags & FlagsFindReplacePrevious) != 0;
 	}
 
 	inline BOOL IsFindReplaceNext() const
@@ -95,12 +95,12 @@ public:
 
 	inline BOOL IsNotifyFindTextChange() const
 	{
-		return !!(dwFlags & FlagsNotifyFindTextChange);
+		return (dwFlags & FlagsNotifyFindTextChange) != 0;
 	}
 
 	inline BOOL IsFreeMove() const
 	{
-		return !!(dwFlags & FlagsFreeMove);
+		return (dwFlags & FlagsFreeMove) != 0;
 	}
 
 	void PromoteStringInArray(LPCTSTR pszText, BOOL bFindStringArray = TRUE)
@@ -275,6 +275,7 @@ protected:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnMoving(UINT nSide, LPRECT lpRect);
+	afx_msg void OnWindowPosChanging(WINDOWPOS* lpwndpos);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg void OnButtonFindAction();
 	afx_msg void OnMatchCase();

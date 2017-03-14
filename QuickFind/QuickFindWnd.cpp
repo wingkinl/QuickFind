@@ -55,6 +55,7 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_SIZING()
 	ON_WM_SIZE()
 	ON_WM_MOVING()
+	ON_WM_WINDOWPOSCHANGING()
 	ON_WM_GETMINMAXINFO()
 	ON_BN_CLICKED(IDOK, &OnButtonFindAction)
 	ON_COMMAND(ID_QUICKFIND_MATCHCASE, &OnMatchCase)
@@ -640,6 +641,57 @@ void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 	else
 	{
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsFreeMove;
+	}
+}
+
+void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
+{
+	CQuickFindWndBase::OnWindowPosChanging(lpwndpos);
+	if ((lpwndpos->flags & SWP_NOMOVE) == 0 && m_info.IsFreeMove())
+	{
+		// snap to owner window
+		auto pWndOwner = GetOwner();
+		if (pWndOwner->GetSafeHwnd())
+		{
+			enum {SnapSize = 15};
+			CRect rectOwnerWnd;
+			pWndOwner->GetWindowRect(rectOwnerWnd);
+			pWndOwner->ScreenToClient(rectOwnerWnd);
+			CRect rectWnd;
+			GetWindowRect(&rectWnd);
+			CRect rect;
+			if (lpwndpos->flags & SWP_NOSIZE)
+			{
+				rect.SetRect(lpwndpos->x, lpwndpos->y, lpwndpos->x + rectWnd.Width(), lpwndpos->y + rectWnd.Height());
+			}
+			else
+			{
+				rect.SetRect(lpwndpos->x, lpwndpos->y, lpwndpos->x + lpwndpos->cx, lpwndpos->y + lpwndpos->cy);
+			}
+			int cx = rect.Width();
+			if (abs(rect.left - rectOwnerWnd.left) < SnapSize)
+			{
+				lpwndpos->x = rectOwnerWnd.left;
+				lpwndpos->cx = rect.Width();
+			}
+			if (abs(rect.top - rectOwnerWnd.top) < SnapSize)
+			{
+				lpwndpos->y = rectOwnerWnd.top;
+				lpwndpos->cy = rect.Height();
+			}
+			if (abs(rect.right - rectOwnerWnd.right) < SnapSize)
+			{
+				lpwndpos->x = rectOwnerWnd.right - rect.Width();
+				lpwndpos->cx = rect.Width();
+			}
+			if (abs(rect.bottom - rectOwnerWnd.bottom) < SnapSize)
+			{
+				lpwndpos->y = rectOwnerWnd.bottom - rect.Height();
+				lpwndpos->cy = rect.Height();
+			}
+			if (lpwndpos->y == rectOwnerWnd.top && lpwndpos->x + cx == rectOwnerWnd.right)
+				m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFreeMove;
+		}
 	}
 }
 
