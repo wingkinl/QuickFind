@@ -21,7 +21,6 @@ CQuickFindWnd::CQuickFindWnd()
 	m_hAccel = nullptr;
 	m_pAccelTable = nullptr;
 	m_nAccelSize = 0;
-	m_nCurFindActionID = 0;
 }
 
 CQuickFindWnd::~CQuickFindWnd()
@@ -236,8 +235,8 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_menuFindAction.LoadMenu(IDR_QUICKFIND_ACTION);
 	m_wndFindAction.m_hMenu = m_menuFindAction.GetSubMenu(0)->GetSafeHmenu();
 	m_wndFindAction.m_bOSMenu = FALSE;
-	m_nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
-	VERIFY(InitButton(m_wndFindAction, m_nCurFindActionID));
+	int nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
+	VERIFY(InitButton(m_wndFindAction, nCurFindActionID));
 	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE));
 	VERIFY(InitButton(m_wndReplaceNext, ID_QUICKFIND_REPLACENEXT));
 	VERIFY(InitButton(m_wndReplaceAll, ID_QUICKFIND_REPLACEALL));
@@ -308,19 +307,41 @@ void CQuickFindWnd::UpdateWindowPos()
 void CQuickFindWnd::OnPaint()
 {
 	CPaintDC dc(this);
+	//CMemDC memDC(dc, this);
+	//CDC* pDC = &memDC.GetDC();
+	CDC* pDC = &dc;
 	CRect rect;
-	GetClientRect(&rect);
+	GetClientRect(rect);
 	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
 	rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
 	HTHEME ht = OpenThemeData(m_hWnd, L"SCROLLBAR");
 	if (ht)
 	{
-		DrawThemeBackground(ht, dc.GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rect, nullptr);
+		DrawThemeBackground(ht, pDC->GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rect, nullptr);
 		CloseThemeData(ht);
 	}
+
+// 	GetMoveGripperRect(rect);
+// 	for (LONG yy = rect.top; yy <= rect.bottom; yy += 2)
+// 	{
+// 		for (LONG xx = rect.left + (yy & 1) ? 2 : 0; xx <= rect.right; xx += 4)
+// 		{
+// 			pDC->SetPixel(xx, yy, RGB(153,153,153));
+// 		}
+// 	}
 }
 
-void CQuickFindWnd::GetMoveSizeGripperRect(CRect& rectGripper, BOOL bGetSizer)
+void CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
+{
+	GetClientRect(rectGripper);
+	CRect rect;
+	m_wndReplaceAll.GetWindowRect(rect);
+	ScreenToClient(rect);
+	rectGripper.left = rect.right + 5;
+	rectGripper.top = rect.top;
+}
+
+void CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
 {
 	int nGripCX = GetSystemMetrics(SM_CXHSCROLL);
 	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
@@ -328,10 +349,6 @@ void CQuickFindWnd::GetMoveSizeGripperRect(CRect& rectGripper, BOOL bGetSizer)
 	GetClientRect(rcClient);
 	rectGripper = rcClient;
 	rectGripper.right = rectGripper.left + nGripCX;
-	if (bGetSizer)
-		rectGripper.top = rectGripper.bottom - nGripCY;
-	else
-		rectGripper.bottom -= nGripCY;
 }
 
 // reference: CPane::EnterDragMode
@@ -340,10 +357,15 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 {
  	CPoint ptHitClient = point;
  	ScreenToClient(&ptHitClient);
-	CRect rectSizer;
-	GetMoveSizeGripperRect(rectSizer, TRUE);
-	if (rectSizer.PtInRect(ptHitClient))
-		return HTBOTTOMLEFT;
+	CRect rectGripper;
+	GetSizeGripperRect(rectGripper);
+	if (rectGripper.PtInRect(ptHitClient))
+	{
+		int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
+		if (ptHitClient.y >= rectGripper.bottom - nGripCY)
+			return HTBOTTOMLEFT;
+		return HTLEFT;
+	}
 	else
 	{
 		CRect rcClient;
@@ -363,7 +385,7 @@ BOOL CQuickFindWnd::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	ScreenToClient(&ptCursorClient);
 
 	CRect rectGripper;
-	GetMoveSizeGripperRect(rectGripper, FALSE);
+	GetMoveGripperRect(rectGripper);
 
 	if (rectGripper.PtInRect(ptCursorClient))
 	{
@@ -532,28 +554,26 @@ BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
 
 void CQuickFindWnd::OnButtonFindAction()
 {
-	if (m_wndFindAction.m_nMenuResult && m_wndFindAction.m_nMenuResult != m_nCurFindActionID)
+	BOOL bChangeButton = FALSE;
+	switch (m_wndFindAction.m_nMenuResult)
 	{
-		m_nCurFindActionID = m_wndFindAction.m_nMenuResult;
-		VERIFY(InitButton(m_wndFindAction, m_nCurFindActionID));
-	}
-	switch (m_nCurFindActionID)
-	{
+	default:
 	case ID_QUICKFIND_NEXT:
+		bChangeButton = m_info.IsFindReplacePrevious();
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
 		OnFindNext();
 		break;
 	case ID_QUICKFIND_PREVIOUS:
+		bChangeButton = m_info.IsFindReplaceNext();
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
 		OnFindPrevious();
 		break;
 	case ID_QUICKFIND_ALL:
 		OnFindAll();
 		break;
-	default:
-		ASSERT(0);
-		break;
 	}
+	if (bChangeButton)
+		VERIFY(InitButton(m_wndFindAction, m_wndFindAction.m_nMenuResult));
 }
 
 void CQuickFindWnd::OnMatchCase()

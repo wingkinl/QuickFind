@@ -171,7 +171,8 @@ protected:
 
 	void OnCancel() override;
 
-	void GetMoveSizeGripperRect(CRect& rectGripper, BOOL bGetSizer);
+	void GetMoveGripperRect(CRect& rectGripper);
+	void GetSizeGripperRect(CRect& rectGripper);
 private:
 	void ShowReplaceUI(BOOL bShow);
 	void ShowOptionsUI(BOOL bShow);
@@ -187,7 +188,6 @@ protected:
 	
 	CMenu			m_menuFindAction;
 	CMFCMenuButton	m_wndFindAction;
-	int				m_nCurFindActionID;
 	CMFCButton		m_wndClose;
 
 	CComboBox		m_wndReplace;
