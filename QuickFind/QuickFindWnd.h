@@ -33,10 +33,12 @@ public:
 	DWORD			dwFlags;
 	CStringArray	saSearch;
 	CStringArray	saReplace;
+	UINT			nMaxItems;
 
 	QUICKFIND_INFO()
 	{
 		dwFlags = FlagsInitShowOptions|FlagsNotifyFindTextChange;
+		nMaxItems = 20;
 	}
 
 	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs)
@@ -44,6 +46,10 @@ public:
 		dwFlags = rhs.dwFlags;
 		saSearch.Copy(rhs.saSearch);
 		saReplace.Copy(rhs.saReplace);
+		if (saSearch.GetSize() > nMaxItems)
+			saSearch.SetSize(nMaxItems);
+		if (saReplace.GetSize() > nMaxItems)
+			saReplace.SetSize(nMaxItems);
 		return *this;
 	}
 
@@ -99,20 +105,26 @@ public:
 
 	void PromoteStringInArray(LPCTSTR pszText, BOOL bFindStringArray = TRUE)
 	{
-		PromoteStringInArray(bFindStringArray ? saSearch : saReplace, pszText);
+		CStringArray& sa = bFindStringArray ? saSearch : saReplace;
+		PromoteStringInArray(sa, pszText);
+		if (sa.GetSize() > nMaxItems)
+			sa.SetSize(nMaxItems);
 	}
 protected:
 	static void PromoteStringInArray(CStringArray& sa, LPCTSTR pszTextToMerge)
 	{
-		for (INT_PTR ii = 0; ii < sa.GetSize(); ++ii)
+		INT_PTR ii;
+		for (ii = 0; ii < sa.GetSize(); ++ii)
 		{
 			if (sa[ii].Compare(pszTextToMerge) == 0)
 			{
-				sa.RemoveAt(ii);
+				if (ii)
+					sa.RemoveAt(ii);
 				break;
 			}
 		}
-		sa.InsertAt(0, pszTextToMerge);
+		if (ii || sa.GetSize() == 0)
+			sa.InsertAt(0, pszTextToMerge);
 	}
 };
 
@@ -146,8 +158,6 @@ public:
 
 	BOOL OnInitDialog() override;
 
-	const QUICKFIND_INFO& GetParams();
-
 	CString GetFindString() const;
 
 	CString GetReplaceString() const;
@@ -158,6 +168,40 @@ public:
 
 	// called when owner window's size has been changed
 	void UpdateWindowPos();
+
+	inline DWORD GetFlags() const
+	{
+		return m_info.dwFlags;
+	}
+
+	inline BOOL IsMatchCase() const
+	{
+		return m_info.IsMatchCase();
+	}
+
+	inline BOOL IsMatchWholeWord() const
+	{
+		return m_info.IsMatchWholeWord();
+	}
+
+	inline BOOL IsUseRegEx() const
+	{
+		return m_info.IsUseRegEx();
+	}
+
+	inline BOOL IsFindReplacePrevious() const
+	{
+		return m_info.IsFindReplacePrevious();
+	}
+
+	inline BOOL IsFindReplaceNext() const
+	{
+		return m_info.IsFindReplaceNext();
+	}
+
+	void GetFindStringArray(CStringArray& sa) const;
+
+	void GetReplaceStringArray(CStringArray& sa) const;
 protected:
 	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
 	
@@ -171,9 +215,11 @@ protected:
 
 	void OnCancel() override;
 
-	void GetMoveGripperRect(CRect& rectGripper);
-	void GetSizeGripperRect(CRect& rectGripper);
+	BOOL GetMoveGripperRect(CRect& rectGripper);
+	BOOL GetSizeGripperRect(CRect& rectGripper);
 private:
+	void InitFindActionMenu();
+
 	void ShowReplaceUI(BOOL bShow);
 	void ShowOptionsUI(BOOL bShow);
 
@@ -222,11 +268,13 @@ protected:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-	afx_msg void OnPaint();	
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnPaint();
 	afx_msg LRESULT OnNcHitTest(CPoint point);
 	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnMoving(UINT nSide, LPRECT lpRect);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg void OnButtonFindAction();
 	afx_msg void OnMatchCase();

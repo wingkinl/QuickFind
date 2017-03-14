@@ -195,7 +195,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	saScopes.Add(_T("Current Block"));
 	saScopes.Add(_T("Current Document"));
 	saScopes.Add(_T("All Open Documents"));
-	_quickfindState.pQuickFindWnd->SetScopeItems(saScopes, 1);	
+	_quickfindState.pQuickFindWnd->SetScopeItems(saScopes, 1);
 	_quickfindState.pQuickFindWnd->SetActiveShowWindow();
 	ASSERT_VALID(this);
 }
@@ -204,10 +204,10 @@ BOOL CQuickFindView::OnFind(CQuickFindWndDemo* pQuickFindWnd)
 {
 	ASSERT_VALID(this);
 	ASSERT_VALID(pQuickFindWnd);
-	auto& info = pQuickFindWnd->GetParams();
-	_quickfindState.info.dwFlags = info.dwFlags;
-	_quickfindState.info.saSearch.Copy(info.saSearch);
-	BOOL bRet = FindText(pQuickFindWnd->GetFindString(), info.IsMatchCase(), info.IsMatchWholeWord(), info.IsFindReplaceNext());
+	_quickfindState.info.dwFlags = pQuickFindWnd->GetFlags();
+	pQuickFindWnd->GetFindStringArray(_quickfindState.info.saSearch);
+	BOOL bRet = FindText(pQuickFindWnd->GetFindString(), pQuickFindWnd->IsMatchCase(), 
+		pQuickFindWnd->IsMatchWholeWord(), pQuickFindWnd->IsFindReplaceNext());
 	return bRet;
 }
 
@@ -221,12 +221,11 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 	ASSERT_VALID(this);
 	ASSERT_VALID(pQuickFindWnd);
 	ASSERT_VALID(this);
-	auto& info = pQuickFindWnd->GetParams();
 	_AFX_RICHEDIT_STATE* pEditState = _afxRichEditState;
 	pEditState->strFind = pQuickFindWnd->GetFindString();
-	pEditState->bCase = info.IsMatchCase();
-	pEditState->bWord = info.IsMatchWholeWord();
-	pEditState->bNext = info.IsFindReplaceNext();
+	pEditState->bCase = pQuickFindWnd->IsMatchCase();
+	pEditState->bWord = pQuickFindWnd->IsMatchWholeWord();
+	pEditState->bNext = pQuickFindWnd->IsFindReplaceNext();
 
 	CWaitCursor wait;
 
@@ -270,10 +269,10 @@ BOOL CQuickFindView::OnReplace(CQuickFindWndDemo* pQuickFindWnd)
 {
 	ASSERT_VALID(this);
 	ASSERT_VALID(pQuickFindWnd);
-	auto& info = pQuickFindWnd->GetParams();
-	_quickfindState.info.dwFlags = info.dwFlags;
-	_quickfindState.info.saReplace.Copy(info.saReplace);
-	OnReplaceSel(pQuickFindWnd->GetFindString(), info.IsFindReplaceNext(), info.IsMatchCase(), info.IsMatchWholeWord(), pQuickFindWnd->GetReplaceString());
+	_quickfindState.info.dwFlags = pQuickFindWnd->GetFlags();
+	pQuickFindWnd->GetReplaceStringArray(_quickfindState.info.saReplace);
+	OnReplaceSel(pQuickFindWnd->GetFindString(), pQuickFindWnd->IsFindReplaceNext(), 
+		pQuickFindWnd->IsMatchCase(), pQuickFindWnd->IsMatchWholeWord(), pQuickFindWnd->GetReplaceString());
 	return TRUE;
 }
 
@@ -281,10 +280,10 @@ BOOL CQuickFindView::OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd)
 {
 	ASSERT_VALID(this);
 	ASSERT_VALID(pQuickFindWnd);
-	auto& info = pQuickFindWnd->GetParams();
-	_quickfindState.info.dwFlags = info.dwFlags;
-	_quickfindState.info.saReplace.Copy(info.saReplace);
-	__super::OnReplaceAll(pQuickFindWnd->GetFindString(), pQuickFindWnd->GetReplaceString(), info.IsMatchCase(), info.IsMatchWholeWord());
+	_quickfindState.info.dwFlags = pQuickFindWnd->GetFlags();
+	pQuickFindWnd->GetReplaceStringArray(_quickfindState.info.saReplace);
+	__super::OnReplaceAll(pQuickFindWnd->GetFindString(), pQuickFindWnd->GetReplaceString(), 
+		pQuickFindWnd->IsMatchCase(), pQuickFindWnd->IsMatchWholeWord());
 	return TRUE;
 }
 
@@ -295,7 +294,6 @@ LRESULT CQuickFindView::OnQuickFindCmd(WPARAM wp, LPARAM lp)
 	CQuickFindWndDemo* pQuickFindWnd = static_cast<CQuickFindWndDemo*>(pQNMHDR->pNotifier);
 	ASSERT_VALID(pQuickFindWnd);
 	ASSERT(!_quickfindState.pQuickFindWnd || pQuickFindWnd == _quickfindState.pQuickFindWnd);
-	auto& info = pQuickFindWnd->GetParams();
 	switch (cmd)
 	{
 	case QuickFindCmdTerminating:

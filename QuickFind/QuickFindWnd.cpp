@@ -48,11 +48,13 @@ static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_NCDESTROY()
-	ON_WM_PAINT()
+	//ON_WM_ERASEBKGND()
+	//ON_WM_PAINT()
 	ON_WM_NCHITTEST()
 	ON_WM_SETCURSOR()
 	ON_WM_SIZING()
 	ON_WM_SIZE()
+	ON_WM_MOVING()
 	ON_WM_GETMINMAXINFO()
 	ON_BN_CLICKED(IDOK, &OnButtonFindAction)
 	ON_COMMAND(ID_QUICKFIND_MATCHCASE, &OnMatchCase)
@@ -72,11 +74,6 @@ END_MESSAGE_MAP()
 
 
 // CQuickFindWnd message handlers
-
-const QUICKFIND_INFO& CQuickFindWnd::GetParams()
-{
-	return m_info;
-}
 
 BOOL CQuickFindWnd::FindAccelerator(UINT uiCmd, CString& str) const
 {
@@ -197,6 +194,24 @@ BOOL CQuickFindWnd::SetScopeItems(const CStringArray& saItems, int nActiveIndex)
 	return TRUE;
 }
 
+void CQuickFindWnd::InitFindActionMenu()
+{
+	//m_menuFindAction.LoadMenu(IDR_QUICKFIND_ACTION);
+	//m_wndFindAction.m_hMenu = m_menuFindAction.GetSubMenu(0)->GetSafeHmenu();
+	m_menuFindAction.CreatePopupMenu();
+
+	UINT arrIDS[] = { ID_QUICKFIND_NEXT, ID_QUICKFIND_PREVIOUS, ID_QUICKFIND_ALL };
+	for (auto nID : arrIDS)
+	{
+		CString strText;
+		strText.LoadString(nID);
+		m_menuFindAction.AppendMenu(MF_STRING, nID, strText);
+	}
+
+	m_wndFindAction.m_hMenu = m_menuFindAction.GetSafeHmenu();
+	m_wndFindAction.m_bOSMenu = FALSE;
+}
+
 BOOL CQuickFindWnd::OnInitDialog()
 {
 	CQuickFindWndBase::OnInitDialog();
@@ -232,9 +247,7 @@ BOOL CQuickFindWnd::OnInitDialog()
 	}
 
 	m_wndFindAction.m_bDefaultClick = TRUE;
-	m_menuFindAction.LoadMenu(IDR_QUICKFIND_ACTION);
-	m_wndFindAction.m_hMenu = m_menuFindAction.GetSubMenu(0)->GetSafeHmenu();
-	m_wndFindAction.m_bOSMenu = FALSE;
+	InitFindActionMenu();
 	int nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
 	VERIFY(InitButton(m_wndFindAction, nCurFindActionID));
 	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE));
@@ -278,6 +291,10 @@ void CQuickFindWnd::SetActiveShowWindow()
 	ShowWindow(SW_SHOW);
 }
 
+enum {
+	QuickFindMinTrackWidth = 200,
+};
+
 void CQuickFindWnd::UpdateWindowPos()
 {
 	auto pWndOwner = GetOwner();
@@ -289,29 +306,81 @@ void CQuickFindWnd::UpdateWindowPos()
 	if (m_info.IsFreeMove())
 	{
 		// in case the window was moved outside the client area, move it to proper place
-		ScreenToClient(rectDlg);
+		pWndOwner->ScreenToClient(rectDlg);
 		CSize szDiff(rectDlg.right - rectOwnerClient.right, rectDlg.bottom - rectOwnerClient.bottom);
-		if (szDiff.cx)
+		if (szDiff.cx > 0)
 			rectDlg.left = max(rectDlg.left - szDiff.cx, rectOwnerClient.left);
-		if (szDiff.cy)
+		if (szDiff.cy > 0)
 			rectDlg.top = max(rectDlg.top - szDiff.cy, rectOwnerClient.top);
-		SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE);
+		if (szDiff.cx > 0 || szDiff.cy > 0)
+			SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE);
 	}
 	else
 	{
-		int nx = max(rectOwnerClient.right - rectDlg.Width(), rectOwnerClient.left);
-		SetWindowPos(nullptr, nx, rectOwnerClient.top, rectOwnerClient.right - nx, rectDlg.Height(), 0);
+		int nLeft = max(rectOwnerClient.right - rectDlg.Width(), rectOwnerClient.left);
+		int nWidth = max(rectOwnerClient.right - nLeft, QuickFindMinTrackWidth);
+		SetWindowPos(nullptr, nLeft, rectOwnerClient.top, nWidth, rectDlg.Height(), 0);
 	}
+}
+
+static void _GetComboStringArray(const CComboBox& combo, CStringArray& sa, int nMaxCount)
+{
+	nMaxCount = min(nMaxCount, combo.GetCount());
+	sa.SetSize(nMaxCount);
+	for (int ii = 0; ii < nMaxCount; ++ii)
+	{
+		combo.GetLBText(ii, sa[ii]);
+	}
+}
+
+void CQuickFindWnd::GetFindStringArray(CStringArray& sa) const
+{
+	_GetComboStringArray(m_wndFind, sa, m_info.nMaxItems);
+}
+
+void CQuickFindWnd::GetReplaceStringArray(CStringArray& sa) const
+{
+	_GetComboStringArray(m_wndReplace, sa, m_info.nMaxItems);
+}
+
+BOOL CQuickFindWnd::OnEraseBkgnd(CDC* pDC)
+{
+	CRect rect;
+	GetClientRect(rect);
+	pDC->FillSolidRect(rect, GetSysColor(COLOR_3DFACE));
+
+	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
+	rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
+	HTHEME ht = OpenThemeData(m_hWnd, L"SCROLLBAR");
+	if (ht)
+	{
+		DrawThemeBackground(ht, pDC->GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rect, nullptr);
+		CloseThemeData(ht);
+	}
+
+	if ( GetMoveGripperRect(rect) )
+	{
+		for (LONG yy = rect.top; yy <= rect.bottom; yy += 2)
+		{
+			for (LONG xx = rect.left + (yy & 1) ? 2 : 0; xx <= rect.right; xx += 4)
+			{
+				pDC->SetPixel(xx, yy, RGB(153, 153, 153));
+			}
+		}
+	}
+	return TRUE;
 }
 
 void CQuickFindWnd::OnPaint()
 {
 	CPaintDC dc(this);
-	//CMemDC memDC(dc, this);
-	//CDC* pDC = &memDC.GetDC();
-	CDC* pDC = &dc;
+	CMemDC memDC(dc, this);
+	CDC* pDC = &memDC.GetDC();
+	//CDC* pDC = &dc;
 	CRect rect;
 	GetClientRect(rect);
+	pDC->FillSolidRect(rect, GetSysColor(COLOR_3DFACE));
+
 	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
 	rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
 	HTHEME ht = OpenThemeData(m_hWnd, L"SCROLLBAR");
@@ -331,17 +400,21 @@ void CQuickFindWnd::OnPaint()
 // 	}
 }
 
-void CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
+BOOL CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
 {
+	if (!m_wndReplaceAll.m_hWnd)
+		return FALSE;
 	GetClientRect(rectGripper);
 	CRect rect;
 	m_wndReplaceAll.GetWindowRect(rect);
 	ScreenToClient(rect);
-	rectGripper.left = rect.right + 5;
+	rectGripper.left = rect.right;
 	rectGripper.top = rect.top;
+	rectGripper.DeflateRect(5, 5);
+	return TRUE;
 }
 
-void CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
+BOOL CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
 {
 	int nGripCX = GetSystemMetrics(SM_CXHSCROLL);
 	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
@@ -349,22 +422,24 @@ void CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
 	GetClientRect(rcClient);
 	rectGripper = rcClient;
 	rectGripper.right = rectGripper.left + nGripCX;
+	return TRUE;
 }
-
-// reference: CPane::EnterDragMode
 
 LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 {
  	CPoint ptHitClient = point;
  	ScreenToClient(&ptHitClient);
 	CRect rectGripper;
-	GetSizeGripperRect(rectGripper);
-	if (rectGripper.PtInRect(ptHitClient))
+	if ( GetSizeGripperRect(rectGripper) && rectGripper.PtInRect(ptHitClient) )
 	{
 		int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
 		if (ptHitClient.y >= rectGripper.bottom - nGripCY)
 			return HTBOTTOMLEFT;
 		return HTLEFT;
+	}
+	else if ( GetMoveGripperRect(rectGripper) && rectGripper.PtInRect(ptHitClient) )
+	{
+		return HTCAPTION;
 	}
 	else
 	{
@@ -398,13 +473,14 @@ BOOL CQuickFindWnd::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 {
 	CQuickFindWndBase::OnSizing(fwSide, pRect);
+
 	if (fwSide == WMSZ_LEFT)
 		return;
 
 	CRect rectOldWnd;
 	GetWindowRect(rectOldWnd);
 
-	CRect rect(pRect);
+	CRect rect = *pRect;
 	int nYDelta = rect.Height() - rectOldWnd.Height();
 	if (nYDelta == 0)
 		return;
@@ -474,10 +550,11 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 	CQuickFindWndBase::OnSize(nType, cx, cy);
 
 	CRect rect;
-	GetClientRect(&rect);
-	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
-	//rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
-	InvalidateRect(rect);
+	//if (GetSizeGripperRect(rect))
+	//	InvalidateRect(rect);
+
+	//if (GetMoveGripperRect(rect))
+	//	InvalidateRect(rect);
 
 	if (!m_wndFind.GetSafeHwnd())
 		return;
@@ -523,10 +600,53 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 	m_szLastClientSize = szDlgNewSize;
 }
 
+void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
+{
+	CQuickFindWndBase::OnMoving(nSide, lpRect);
+
+	if (m_info.IsFreeMove())
+	{
+		// restrain in owner
+		auto pWndOwner = GetOwner();
+		if (!pWndOwner->GetSafeHwnd())
+			return;
+		CRect rectNew = *lpRect;
+		CSize szNew = rectNew.Size();
+		CRect rectOwner;
+		pWndOwner->GetClientRect(rectOwner);
+		pWndOwner->ClientToScreen(rectOwner);
+		if (rectNew.left < rectOwner.left)
+		{
+			rectNew.left = rectOwner.left;
+			rectNew.right = rectNew.left + szNew.cx;
+		}
+		if (rectNew.top < rectOwner.top)
+		{
+			rectNew.top = rectOwner.top;
+			rectNew.bottom = rectNew.top + szNew.cy;
+		}
+		if (rectNew.right > rectOwner.right)
+		{
+			rectNew.right = rectOwner.right;
+			rectNew.left = rectNew.right - szNew.cx;
+		}
+		if (rectNew.bottom > rectOwner.bottom)
+		{
+			rectNew.bottom = rectOwner.bottom;
+			rectNew.top = rectNew.bottom - szNew.cy;
+		}
+		*lpRect = rectNew;
+	}
+	else
+	{
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsFreeMove;
+	}
+}
+
 void CQuickFindWnd::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 {
 	CQuickFindWndBase::OnGetMinMaxInfo(lpMMI);
-	lpMMI->ptMinTrackSize.x = 200;
+	lpMMI->ptMinTrackSize.x = QuickFindMinTrackWidth;
 	if (m_wndFind.GetSafeHwnd())
 	{
 		CRect rect;
@@ -617,10 +737,29 @@ void CQuickFindWnd::OnSelChangeScope()
 	NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel());
 }
 
-static void _PromoteTextInCombo(CComboBox& combo, CStringArray& saText)
+static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, UINT nMaxCount)
+{
+	ASSERT(combo.m_hWnd);
+	int nIndex = combo.FindStringExact(-1, pszText);
+	if (nIndex < 0)
+	{
+		combo.InsertString(0, pszText);
+		if ((UINT)combo.GetCount() > nMaxCount)
+		{
+			combo.DeleteString(combo.GetCount() - 1);
+		}
+	}
+	else if (nIndex > 0)
+	{
+		combo.DeleteString(nIndex);
+		combo.InsertString(0, pszText);
+	}
+	combo.SetCurSel(0);
+}
+
+static void _PromoteCurTextInComboList(CComboBox& combo, UINT nMaxCount)
 {
 	// they have to be in sync!
-	ASSERT(combo.GetCount() == saText.GetCount());
 	int nCurSel = combo.GetCurSel();
 	if (nCurSel >= 0)
 	{
@@ -632,69 +771,30 @@ static void _PromoteTextInCombo(CComboBox& combo, CStringArray& saText)
 			combo.DeleteString(nCurSel);
 			combo.InsertString(0, strItem);
 			combo.SetCurSel(0);
-
-			saText.RemoveAt(nCurSel);
-			saText.InsertAt(0, strItem);
 		}
 	}
 	else if (combo.GetWindowTextLength())
 	{
 		CString strText;
 		combo.GetWindowText(strText);
-		int ii, nCount = combo.GetCount();
-		for (ii = 0; ii < nCount; ii++)
-		{
-			CString strTemp;
-			combo.GetLBText(ii, strTemp);
-			if (!strText.Compare(strTemp))
-			{
-				if (ii)
-				{
-					combo.DeleteString(ii);
-					saText.RemoveAt(ii);
-				}
-				break;
-			}
-		}
-		if (ii || nCount == 0)
-		{
-			combo.InsertString(0, strText);
-			saText.InsertAt(0, strText);
-		}
-		combo.SetCurSel(0);
+		_PromoteTextInComboEx(combo, strText, nMaxCount);
 	}
 }
 
 void CQuickFindWnd::SetFindString(LPCTSTR pszText)
 {
-	ASSERT(m_wndFind.m_hWnd);
-	BOOL bChange = FALSE;
-	int nIndex = m_wndFind.FindStringExact(-1, pszText);
-	if (nIndex < 0)
-	{
-		m_wndFind.InsertString(0, pszText);
-		m_info.saSearch.InsertAt(0, pszText);
-	}
-	else if (nIndex > 0)
-	{
-		m_wndFind.DeleteString(nIndex);
-		m_wndFind.InsertString(0, pszText);
-
-		m_info.saSearch.RemoveAt(nIndex);
-		m_info.saSearch.InsertAt(0, pszText);
-	}
-	m_wndFind.SetCurSel(0);
+	_PromoteTextInComboEx(m_wndFind, pszText, m_info.nMaxItems);
 	OnSelChangeFind();
 }
 
 void CQuickFindWnd::PromoteFindTextItems()
 {
-	_PromoteTextInCombo(m_wndFind, m_info.saSearch);
+	_PromoteCurTextInComboList(m_wndFind, m_info.nMaxItems);
 }
 
 void CQuickFindWnd::PromoteReplaceTextItems()
 {
-	_PromoteTextInCombo(m_wndReplace, m_info.saReplace);
+	_PromoteCurTextInComboList(m_wndReplace, m_info.nMaxItems);
 }
 
 void CQuickFindWnd::OnFindNext()
