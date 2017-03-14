@@ -9,7 +9,7 @@
 #define IDP_FAILED_TO_CREATE            102
 #define ID_QUICKFIND_PREVIOUS           103
 #define ID_QUICKFIND_ALL                104
-#define IDC_QUICK_FIND                  111
+#define ID_QUICKFIND_FINDWHAT           111
 #define IDR_POPUP_EDIT                  119
 #define ID_STATUSBAR_PANE1              120
 #define ID_STATUSBAR_PANE2              121
@@ -35,7 +35,7 @@
 #define ID_VIEW_APPLOOK_OFF_2007_SILVER 217
 #define ID_VIEW_APPLOOK_OFF_2007_AQUA   218
 #define ID_VIEW_APPLOOK_WINDOWS_7       219
-#define IDC_QUICK_REPLACE               222
+#define ID_QUICKFIND_REPLACEWITH        222
 #define IDS_EDIT_MENU                   306
 #define IDD_QUICK_FIND_REPLACE          310
 #define IDR_QUICKFIND_MAG               311

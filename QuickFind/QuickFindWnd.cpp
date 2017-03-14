@@ -35,8 +35,8 @@ void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
 	CQuickFindWndBase::DoDataExchange(pDX);	
 	DDX_Control(pDX, IDOK, m_wndFindAction);
 	DDX_Control(pDX, IDCANCEL, m_wndClose);
-	DDX_Control(pDX, IDC_QUICK_FIND, m_wndFind);
-	DDX_Control(pDX, IDC_QUICK_REPLACE, m_wndReplace);
+	DDX_Control(pDX, ID_QUICKFIND_FINDWHAT, m_wndFind);
+	DDX_Control(pDX, ID_QUICKFIND_REPLACEWITH, m_wndReplace);
 	DDX_Control(pDX, ID_QUICKFIND_REPLACENEXT, m_wndReplaceNext);
 	DDX_Control(pDX, ID_QUICKFIND_REPLACEALL, m_wndReplaceAll);
 	DDX_Control(pDX, ID_QUICKFIND_MATCHCASE, m_wndMatchCase);
@@ -51,6 +51,7 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_NCDESTROY()
 	ON_WM_PAINT()
 	ON_WM_NCHITTEST()
+	ON_WM_SETCURSOR()
 	ON_WM_SIZING()
 	ON_WM_SIZE()
 	ON_WM_GETMINMAXINFO()
@@ -58,8 +59,9 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_QUICKFIND_MATCHCASE, &OnMatchCase)
 	ON_COMMAND(ID_QUICKFIND_MATCHWORD, &OnMatchWord)
 	ON_COMMAND(ID_QUICKFIND_REGEX, &OnUseRegEx)
-	ON_CBN_SELCHANGE(IDC_QUICK_FIND, &OnSelChangeFind)
-	ON_CBN_EDITCHANGE(IDC_QUICK_FIND, &OnEditChangeFind)
+	ON_CBN_SELCHANGE(ID_QUICKFIND_FINDWHAT, &OnSelChangeFind)
+	ON_CBN_EDITCHANGE(ID_QUICKFIND_FINDWHAT, &OnEditChangeFind)
+	ON_CBN_SELCHANGE(ID_QUICKFIND_SCOPE, &OnSelChangeScope)
 	ON_COMMAND(ID_QUICKFIND_NEXT, &OnFindNext)
 	ON_COMMAND(ID_QUICKFIND_PREVIOUS, &OnFindPrevious)
 	ON_COMMAND(ID_QUICKFIND_ALL, &OnFindAll)
@@ -109,6 +111,16 @@ void CQuickFindWnd::PostNcDestroy()
 {
 	ASSERT(m_hWnd == NULL);
 	delete this;
+}
+
+void CQuickFindWnd::OnCancel()
+{
+	auto pWndOwner = GetOwner();
+	if (pWndOwner->GetSafeHwnd())
+	{
+		pWndOwner->SetFocus();
+	}
+	CQuickFindWndBase::OnCancel();
 }
 
 BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) const
@@ -169,6 +181,23 @@ BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 	return TRUE;
 }
 
+BOOL CQuickFindWnd::SetScopeItems(const CStringArray& saItems, int nActiveIndex)
+{
+	if (!m_wndScope.GetSafeHwnd())
+	{
+		ASSERT(0);
+		return FALSE;
+	}
+	m_wndScope.ResetContent();
+	for (INT_PTR ii = 0; ii < saItems.GetSize(); ++ii)
+	{
+		m_wndScope.AddString(saItems[ii]);
+	}
+	if (!saItems.IsEmpty())
+		m_wndScope.SetCurSel(nActiveIndex);
+	return TRUE;
+}
+
 BOOL CQuickFindWnd::OnInitDialog()
 {
 	CQuickFindWndBase::OnInitDialog();
@@ -218,9 +247,13 @@ BOOL CQuickFindWnd::OnInitDialog()
 
 	VERIFY(InitCombo(m_wndFind, m_info.saSearch));
 	VERIFY(InitCombo(m_wndReplace, m_info.saReplace));
-	m_wndReplace.SetCueBanner(L"Replace...");
+	CString strCue;
+	strCue.LoadString(ID_QUICKFIND_REPLACEWITH);
+	m_wndReplace.SetCueBanner(strCue);
 
+	m_wndScope.ShowWindow(m_info.IsShowScope() ? SW_SHOWNORMAL : SW_HIDE);
 	SwitchUI(m_info.IsInitShowAsReplace(), m_info.IsInitShowOptions());
+
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -238,6 +271,40 @@ CString CQuickFindWnd::GetReplaceString() const
 	return strText;
 }
 
+void CQuickFindWnd::SetActiveShowWindow()
+{
+	SetActiveWindow();
+	UpdateWindowPos();
+	m_wndFind.SetFocus();
+	ShowWindow(SW_SHOW);
+}
+
+void CQuickFindWnd::UpdateWindowPos()
+{
+	auto pWndOwner = GetOwner();
+	ASSERT_VALID(pWndOwner);
+	CRect rectOwnerClient;
+	pWndOwner->GetClientRect(rectOwnerClient);
+	CRect rectDlg;
+	GetWindowRect(rectDlg);
+	if (m_info.IsFreeMove())
+	{
+		// in case the window was moved outside the client area, move it to proper place
+		ScreenToClient(rectDlg);
+		CSize szDiff(rectDlg.right - rectOwnerClient.right, rectDlg.bottom - rectOwnerClient.bottom);
+		if (szDiff.cx)
+			rectDlg.left = max(rectDlg.left - szDiff.cx, rectOwnerClient.left);
+		if (szDiff.cy)
+			rectDlg.top = max(rectDlg.top - szDiff.cy, rectOwnerClient.top);
+		SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE);
+	}
+	else
+	{
+		int nx = max(rectOwnerClient.right - rectDlg.Width(), rectOwnerClient.left);
+		SetWindowPos(nullptr, nx, rectOwnerClient.top, rectOwnerClient.right - nx, rectDlg.Height(), 0);
+	}
+}
+
 void CQuickFindWnd::OnPaint()
 {
 	CPaintDC dc(this);
@@ -253,27 +320,57 @@ void CQuickFindWnd::OnPaint()
 	}
 }
 
-LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
+void CQuickFindWnd::GetMoveSizeGripperRect(CRect& rectGripper, BOOL bGetSizer)
 {
-	CPoint ptHitClient = point;
-	ScreenToClient(&ptHitClient);
-
 	int nGripCX = GetSystemMetrics(SM_CXHSCROLL);
 	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
 	CRect rcClient;
 	GetClientRect(rcClient);
-	CRect rcLeft = rcClient;
-	rcLeft.right = rcLeft.left + nGripCX;
-	if (rcLeft.PtInRect(ptHitClient))
-	{
-		if (ptHitClient.y >= rcLeft.bottom - nGripCY)
-			return HTBOTTOMLEFT;
-		return HTLEFT;
-	}
-	else if (ptHitClient.y >= rcClient.bottom - 5)
-		return HTBOTTOM;
+	rectGripper = rcClient;
+	rectGripper.right = rectGripper.left + nGripCX;
+	if (bGetSizer)
+		rectGripper.top = rectGripper.bottom - nGripCY;
+	else
+		rectGripper.bottom -= nGripCY;
+}
 
+// reference: CPane::EnterDragMode
+
+LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
+{
+ 	CPoint ptHitClient = point;
+ 	ScreenToClient(&ptHitClient);
+	CRect rectSizer;
+	GetMoveSizeGripperRect(rectSizer, TRUE);
+	if (rectSizer.PtInRect(ptHitClient))
+		return HTBOTTOMLEFT;
+	else
+	{
+		CRect rcClient;
+		GetClientRect(rcClient);
+		if (ptHitClient.y >= rcClient.bottom - 5)
+			return HTBOTTOM;
+	}
 	return CQuickFindWndBase::OnNcHitTest(point);
+}
+
+BOOL CQuickFindWnd::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	CPoint ptCursor;
+	::GetCursorPos(&ptCursor);
+
+	CPoint ptCursorClient = ptCursor;
+	ScreenToClient(&ptCursorClient);
+
+	CRect rectGripper;
+	GetMoveSizeGripperRect(rectGripper, FALSE);
+
+	if (rectGripper.PtInRect(ptCursorClient))
+	{
+		SetCursor(GetGlobalData()->m_hcurSizeAll);
+		return TRUE;
+	}
+	return CQuickFindWndBase::OnSetCursor(pWnd, nHitTest, message);
 }
 
 void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
@@ -485,17 +582,26 @@ void CQuickFindWnd::OnUseRegEx()
 
 void CQuickFindWnd::OnSelChangeFind()
 {
-	NotifyOwner(QuickFindCmdFindTextChange);
+	if (m_info.IsNotifyFindTextChange())
+		NotifyOwner(QuickFindCmdFindTextChange);
 }
 
 void CQuickFindWnd::OnEditChangeFind()
 {
-	NotifyOwner(QuickFindCmdFindTextChange);
+	if (m_info.IsNotifyFindTextChange())
+		NotifyOwner(QuickFindCmdFindTextChange);
 }
 
-static void _PromoteTextInCombo(CComboBox& combo)
+void CQuickFindWnd::OnSelChangeScope()
 {
-	int nCurSel = combo.GetCurSel();	
+	NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel());
+}
+
+static void _PromoteTextInCombo(CComboBox& combo, CStringArray& saText)
+{
+	// they have to be in sync!
+	ASSERT(combo.GetCount() == saText.GetCount());
+	int nCurSel = combo.GetCurSel();
 	if (nCurSel >= 0)
 	{
 		// no need to promote if already the first one
@@ -506,6 +612,9 @@ static void _PromoteTextInCombo(CComboBox& combo)
 			combo.DeleteString(nCurSel);
 			combo.InsertString(0, strItem);
 			combo.SetCurSel(0);
+
+			saText.RemoveAt(nCurSel);
+			saText.InsertAt(0, strItem);
 		}
 	}
 	else if (combo.GetWindowTextLength())
@@ -520,53 +629,81 @@ static void _PromoteTextInCombo(CComboBox& combo)
 			if (!strText.Compare(strTemp))
 			{
 				if (ii)
+				{
 					combo.DeleteString(ii);
+					saText.RemoveAt(ii);
+				}
 				break;
 			}
 		}
 		if (ii || nCount == 0)
+		{
 			combo.InsertString(0, strText);
+			saText.InsertAt(0, strText);
+		}
 		combo.SetCurSel(0);
 	}
 }
 
-void CQuickFindWnd::PromoteFindTextList()
+void CQuickFindWnd::SetFindString(LPCTSTR pszText)
 {
-	_PromoteTextInCombo(m_wndFind);
+	ASSERT(m_wndFind.m_hWnd);
+	BOOL bChange = FALSE;
+	int nIndex = m_wndFind.FindStringExact(-1, pszText);
+	if (nIndex < 0)
+	{
+		m_wndFind.InsertString(0, pszText);
+		m_info.saSearch.InsertAt(0, pszText);
+	}
+	else if (nIndex > 0)
+	{
+		m_wndFind.DeleteString(nIndex);
+		m_wndFind.InsertString(0, pszText);
+
+		m_info.saSearch.RemoveAt(nIndex);
+		m_info.saSearch.InsertAt(0, pszText);
+	}
+	m_wndFind.SetCurSel(0);
+	OnSelChangeFind();
 }
 
-void CQuickFindWnd::PromoteReplaceTextList()
+void CQuickFindWnd::PromoteFindTextItems()
 {
-	_PromoteTextInCombo(m_wndReplace);
+	_PromoteTextInCombo(m_wndFind, m_info.saSearch);
+}
+
+void CQuickFindWnd::PromoteReplaceTextItems()
+{
+	_PromoteTextInCombo(m_wndReplace, m_info.saReplace);
 }
 
 void CQuickFindWnd::OnFindNext()
 {
-	PromoteFindTextList();
+	PromoteFindTextItems();
 	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindPrevious()
 {
-	PromoteFindTextList();
+	PromoteFindTextItems();
 	NotifyOwner(QuickFindCmdFind);
 }
 
 void CQuickFindWnd::OnFindAll()
 {
-	PromoteFindTextList();
+	PromoteFindTextItems();
 	NotifyOwner(QuickFindCmdFindAll);
 }
 
 void CQuickFindWnd::OnReplaceNext()
 {
-	PromoteReplaceTextList();
+	PromoteReplaceTextItems();
 	NotifyOwner(QuickFindCmdReplace);
 }
 
 void CQuickFindWnd::OnReplaceAll()
 {
-	PromoteReplaceTextList();
+	PromoteReplaceTextItems();
 	NotifyOwner(QuickFindCmdReplaceAll);
 }
 
@@ -583,16 +720,19 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 	rectDlg.bottom = rectClient.bottom;
 
 	ShowReplaceUI(m_bShowReplaceUI);
-	ShowOptionsUI(m_bShowOptionsUI);
+	ShowOptionsUI(m_bShowOptionsUI);	
 	CSize szDlg = rectDlg.Size();
 	SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
 }
 
-LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd)
+LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd, WPARAM wp, LPARAM lp)
 {
 	auto pWndOwner = GetOwner();
 	if (pWndOwner->GetSafeHwnd())
-		return pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)this);
+	{
+		QNMHDR nmhdr = {this, wp, lp};
+		return pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)&nmhdr);
+	}
 	return 0;
 }
 

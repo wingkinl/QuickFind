@@ -35,7 +35,9 @@ protected:
 	virtual void OnInitialUpdate(); // called first time after construct
 	
 	virtual CQuickFindWnd* CreateFindReplaceWindow();
-// Implementation
+
+	CString GetSelText() const;
+	// Implementation
 public:
 	virtual ~CQuickFindView();
 #ifdef _DEBUG
@@ -46,6 +48,7 @@ public:
 
 	BOOL OnFind(CQuickFindWndDemo* pQuickFindWnd);
 	BOOL OnFindAll(CQuickFindWndDemo* pQuickFindWnd);
+	BOOL OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd);
 
 	BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd);
 	BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd);
@@ -60,6 +63,7 @@ protected:
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
 	afx_msg LRESULT OnQuickFindCmd(WPARAM wp, LPARAM lp);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 	DECLARE_MESSAGE_MAP()
 };

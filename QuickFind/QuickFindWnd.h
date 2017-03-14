@@ -10,6 +10,7 @@ enum QuickFindCmd
 	QuickFindCmdReplace			= 2,
 	QuickFindCmdReplaceAll		= 3,
 	QuickFindCmdFindTextChange	= 4,
+	QuickFindCmdScopeSelChange	= 5,
 
 	QuickFindCmdTerminating		= 10,
 };
@@ -25,7 +26,9 @@ public:
 		FlagsMatchCase				= 0x00000100,
 		FlagsMatchWord				= 0x00000200,
 		FlagsUseRegEx				= 0x00000400,
-		FlagsFindReplacePrevious	= 0x00010000,
+		FlagsFindReplacePrevious	= 0x00000800,
+		FlagsNotifyFindTextChange	= 0x00010000,
+		FlagsFreeMove				= 0x01000000,
 	};
 	DWORD			dwFlags;
 	CStringArray	saSearch;
@@ -33,7 +36,7 @@ public:
 
 	QUICKFIND_INFO()
 	{
-		dwFlags = FlagsInitShowOptions;
+		dwFlags = FlagsInitShowOptions|FlagsNotifyFindTextChange;
 	}
 
 	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs)
@@ -84,6 +87,16 @@ public:
 		return !IsFindReplacePrevious();
 	}
 
+	inline BOOL IsNotifyFindTextChange() const
+	{
+		return !!(dwFlags & FlagsNotifyFindTextChange);
+	}
+
+	inline BOOL IsFreeMove() const
+	{
+		return !!(dwFlags & FlagsFreeMove);
+	}
+
 	void PromoteStringInArray(LPCTSTR pszText, BOOL bFindStringArray = TRUE)
 	{
 		PromoteStringInArray(bFindStringArray ? saSearch : saReplace, pszText);
@@ -120,7 +133,16 @@ public:
 	enum { IDD = IDD_QUICK_FIND_REPLACE };
 #endif
 public:
+	struct QNMHDR
+	{
+		CQuickFindWnd*	pNotifier;
+		WPARAM			wParam;
+		LPARAM			lParam;
+	};
+
 	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
+
+	BOOL SetScopeItems(const CStringArray& saItems, int nActiveIndex = 0);
 
 	BOOL OnInitDialog() override;
 
@@ -129,6 +151,13 @@ public:
 	CString GetFindString() const;
 
 	CString GetReplaceString() const;
+
+	void SetFindString(LPCTSTR pszText);
+
+	void SetActiveShowWindow();
+
+	// called when owner window's size has been changed
+	void UpdateWindowPos();
 protected:
 	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
 	
@@ -139,16 +168,20 @@ protected:
 	BOOL FindAccelerator(UINT uiCmd, CString& str) const;
 
 	void PostNcDestroy() override;
+
+	void OnCancel() override;
+
+	void GetMoveSizeGripperRect(CRect& rectGripper, BOOL bGetSizer);
 private:
 	void ShowReplaceUI(BOOL bShow);
 	void ShowOptionsUI(BOOL bShow);
 
 	void SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions);
 
-	LRESULT NotifyOwner(QuickFindCmd cmd);
+	LRESULT NotifyOwner(QuickFindCmd cmd, WPARAM wp = 0, LPARAM lp = 0);
 
-	void PromoteFindTextList();
-	void PromoteReplaceTextList();
+	void PromoteFindTextItems();
+	void PromoteReplaceTextItems();
 protected:
 	CSearchComboBox	m_wndFind;	
 	
@@ -189,8 +222,9 @@ protected:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-	afx_msg void OnPaint();
-	afx_msg LRESULT OnNcHitTest(CPoint point);		
+	afx_msg void OnPaint();	
+	afx_msg LRESULT OnNcHitTest(CPoint point);
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
@@ -200,6 +234,7 @@ protected:
 	afx_msg void OnUseRegEx();
 	afx_msg void OnSelChangeFind();
 	afx_msg void OnEditChangeFind();
+	afx_msg void OnSelChangeScope();
 	afx_msg void OnFindNext();
 	afx_msg void OnFindPrevious();
 	afx_msg void OnFindAll();

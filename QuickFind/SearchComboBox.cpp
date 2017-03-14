@@ -78,7 +78,9 @@ void CSearchComboBoxEdit::OnDrawBrowseButton(CDC* pDC, CRect rect, BOOL bIsButto
 
 void CSearchComboBoxEdit::Init()
 {
-	SetCueBanner(L"Find...");
+	CString strCue;
+	strCue.LoadString(ID_QUICKFIND_FINDWHAT);
+	SetCueBanner(strCue);
 	InitImages();
 
 	m_Mode = BrowseMode_Default;
