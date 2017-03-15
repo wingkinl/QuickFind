@@ -48,8 +48,8 @@ static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_NCDESTROY()
-	//ON_WM_ERASEBKGND()
-	//ON_WM_PAINT()
+	ON_WM_ERASEBKGND()
+	ON_WM_PAINT()
 	ON_WM_NCHITTEST()
 	ON_WM_SETCURSOR()
 	ON_WM_SIZING()
@@ -71,6 +71,8 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_QUICKFIND_REPLACEALL, &OnReplaceAll)
 	ON_COMMAND(ID_EDIT_FIND, &OnEditFind)
 	ON_COMMAND(ID_EDIT_REPLACE, &OnEditReplace)
+	ON_WM_SETFOCUS()
+	ON_WM_KILLFOCUS()
 END_MESSAGE_MAP()
 
 
@@ -132,7 +134,7 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) co
 		}
 	}
 	btn.m_nFlatStyle = CMFCButton::BUTTONSTYLE_FLAT;
-	btn.m_bTransparent = TRUE;
+	//btn.m_bTransparent = TRUE;
 	btn.SetWindowText(_T(""));
 
 	auto hIcon = (HICON)LoadImage(hResInst, resName, IMAGE_ICON, 16, 16, LR_SHARED);
@@ -213,9 +215,42 @@ void CQuickFindWnd::InitFindActionMenu()
 	m_wndFindAction.m_bOSMenu = FALSE;
 }
 
+static void _CenterAlignControls(CWnd* pParent, CWnd* arrWnds[], UINT nCount)
+{
+	CRect rectAlignWith;
+	CWnd* pWndAlignWith = arrWnds[0];
+	pWndAlignWith->GetWindowRect(rectAlignWith);
+	pParent->ScreenToClient(rectAlignWith);
+	UINT nFlags = SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER;
+	for (UINT ii = 1; ii < nCount; ++ii)
+	{
+		CWnd* pWnd = arrWnds[ii];
+		CRect rect;
+		pWnd->GetWindowRect(rect);
+		pParent->ScreenToClient(rect);
+		auto nHeightDiff = rect.Height() - rectAlignWith.Height();
+		if (nHeightDiff == 0)
+		{
+			if (rect.top != rectAlignWith.top)
+			{
+				pWnd->SetWindowPos(nullptr, rect.left, rectAlignWith.top, -1, -1, nFlags);
+			}
+		}
+		else
+		{
+			rect.top = rectAlignWith.top - nHeightDiff / 2;
+			pWnd->SetWindowPos(nullptr, rect.left, rect.top, -1, -1, nFlags);
+		}
+	}
+}
+
 BOOL CQuickFindWnd::OnInitDialog()
 {
 	CQuickFindWndBase::OnInitDialog();
+
+	// to avoid flickering
+	ModifyStyle(0, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+
 	CRect rect;
 	GetClientRect(rect);
 	m_szLastClientSize = rect.Size();
@@ -225,7 +260,7 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_szMaxDlgSize = rectDlg.Size();
 	m_nLastDlgHeight = m_szMaxDlgSize.cy;
 
-	CWnd* arrWndRows[] = {&m_wndFind, &m_wndReplace, &m_wndMatchCase};
+	CWnd* arrWndRows[] = {&m_wndFind, &m_wndReplace, &m_wndScope};
 	static_assert(_countof(m_arrUIRows) == _countof(arrWndRows), "UI design breaking change?");
 	for (int nRow = 0; nRow < _countof(arrWndRows); ++nRow)
 	{
@@ -265,7 +300,12 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_wndReplace.SetCueBanner(strCue);
 
 	m_wndScope.ShowWindow(m_info.IsShowScope() ? SW_SHOWNORMAL : SW_HIDE);
+	
 	SwitchUI(m_info.IsInitShowAsReplace(), m_info.IsInitShowOptions());
+
+	// fix the minor alignment issue
+	CWnd* arrWndAlignFind[] = { &m_wndFind, &m_wndFindAction, &m_wndClose };
+	_CenterAlignControls(this, arrWndAlignFind, _countof(arrWndAlignFind));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -294,6 +334,7 @@ void CQuickFindWnd::SetActiveShowWindow()
 
 enum {
 	QuickFindMinTrackWidth = 200,
+	QuickFindSizeAndFocusIndicatorHeight = 2,
 };
 
 void CQuickFindWnd::UpdateWindowPos()
@@ -346,29 +387,6 @@ void CQuickFindWnd::GetReplaceStringArray(CStringArray& sa) const
 
 BOOL CQuickFindWnd::OnEraseBkgnd(CDC* pDC)
 {
-	CRect rect;
-	GetClientRect(rect);
-	pDC->FillSolidRect(rect, GetSysColor(COLOR_3DFACE));
-
-	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
-	rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
-	HTHEME ht = OpenThemeData(m_hWnd, L"SCROLLBAR");
-	if (ht)
-	{
-		DrawThemeBackground(ht, pDC->GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rect, nullptr);
-		CloseThemeData(ht);
-	}
-
-	if ( GetMoveGripperRect(rect) )
-	{
-		for (LONG yy = rect.top; yy <= rect.bottom; yy += 2)
-		{
-			for (LONG xx = rect.left + (yy & 1) ? 2 : 0; xx <= rect.right; xx += 4)
-			{
-				pDC->SetPixel(xx, yy, RGB(153, 153, 153));
-			}
-		}
-	}
 	return TRUE;
 }
 
@@ -377,41 +395,52 @@ void CQuickFindWnd::OnPaint()
 	CPaintDC dc(this);
 	CMemDC memDC(dc, this);
 	CDC* pDC = &memDC.GetDC();
-	//CDC* pDC = &dc;
-	CRect rect;
-	GetClientRect(rect);
-	pDC->FillSolidRect(rect, GetSysColor(COLOR_3DFACE));
+	CRect rectClient, rectGripper;
+	GetClientRect(rectClient);
+	pDC->FillSolidRect(rectClient, GetSysColor(COLOR_3DFACE));
 
-	rect.right = rect.left + GetSystemMetrics(SM_CXHSCROLL);
-	rect.top = rect.bottom - GetSystemMetrics(SM_CYVSCROLL);
+	GetSizeGripperRect(rectGripper);
+	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
+	rectGripper.bottom -= QuickFindSizeAndFocusIndicatorHeight;
+	rectGripper.top = rectGripper.bottom - nGripCY;
 	HTHEME ht = OpenThemeData(m_hWnd, L"SCROLLBAR");
 	if (ht)
 	{
-		DrawThemeBackground(ht, pDC->GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rect, nullptr);
+		DrawThemeBackground(ht, pDC->GetSafeHdc(), SBP_SIZEBOX, SZB_HALFBOTTOMLEFTALIGN, rectGripper, nullptr);
 		CloseThemeData(ht);
 	}
 
-// 	GetMoveGripperRect(rect);
-// 	for (LONG yy = rect.top; yy <= rect.bottom; yy += 2)
-// 	{
-// 		for (LONG xx = rect.left + (yy & 1) ? 2 : 0; xx <= rect.right; xx += 4)
-// 		{
-// 			pDC->SetPixel(xx, yy, RGB(153,153,153));
-// 		}
-// 	}
+	GetMoveGripperRect(rectGripper);
+	int nBoxSize = 4;
+	bool bHorz = true;
+	const int nBoxesNumber = bHorz ? (rectGripper.Height() - nBoxSize) / nBoxSize : (rectGripper.Width() - nBoxSize) / nBoxSize;
+	int nOffset = bHorz ? (rectGripper.Height() - nBoxesNumber * nBoxSize) / 2 : (rectGripper.Width() - nBoxesNumber * nBoxSize) / 2;
+
+	for (int nBox = 0; nBox < nBoxesNumber; nBox++)
+	{
+		int x = bHorz ? rectGripper.left : rectGripper.left + nOffset;
+		int y = bHorz ? rectGripper.top + nOffset : rectGripper.top;
+
+		pDC->FillSolidRect(x + 1, y + 1, nBoxSize / 2, nBoxSize / 2, GetGlobalData()->clrBtnHilite);
+		pDC->FillSolidRect(x, y, nBoxSize / 2, nBoxSize / 2, RGB(0xa0,0xa0,0xa0));
+
+		nOffset += nBoxSize;
+	}
+
+	auto pWndFocus = GetFocus();
+	auto pWndActive = GetActiveWindow();
+	BOOL bHasFocus = pWndFocus == this || IsChild(pWndFocus);
+	rectGripper = rectClient;
+	rectGripper.top = rectGripper.bottom - QuickFindSizeAndFocusIndicatorHeight;
+	pDC->FillSolidRect(rectGripper, bHasFocus ? RGB(0,122,204) : RGB(204,206,219));
 }
 
 BOOL CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
 {
-	if (!m_wndReplaceAll.m_hWnd)
-		return FALSE;
 	GetClientRect(rectGripper);
-	CRect rect;
-	m_wndReplaceAll.GetWindowRect(rect);
-	ScreenToClient(rect);
-	rectGripper.left = rect.right;
-	rectGripper.top = rect.top;
-	rectGripper.DeflateRect(5, 5);
+	rectGripper.left = rectGripper.right - 6;
+	rectGripper.top += 5;
+	rectGripper.bottom -= 5;
 	return TRUE;
 }
 
@@ -449,7 +478,10 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 		if (ptHitClient.y >= rcClient.bottom - 5)
 			return HTBOTTOM;
 	}
-	return CQuickFindWndBase::OnNcHitTest(point);
+	LRESULT nHit = CQuickFindWndBase::OnNcHitTest(point);
+	if (nHit == HTCLIENT)
+		return HTCAPTION;
+	return nHit;
 }
 
 BOOL CQuickFindWnd::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
@@ -530,18 +562,18 @@ void CQuickFindWnd::ShowReplaceUI(BOOL bShow)
 
 void CQuickFindWnd::ShowOptionsUI(BOOL bShow)
 {
-	CWnd* arrWnds[] ={ &m_wndMatchCase, &m_wndMatchWord, &m_wndRegEx, &m_wndScope };
-	BOOL bMoveWnd = bShow;
+	CWnd* arrWnds[] ={ &m_wndScope, &m_wndMatchCase, &m_wndMatchWord, &m_wndRegEx };
+	if (bShow)
+	{
+		CRect rect;
+		m_wndScope.GetWindowRect(rect);
+		ScreenToClient(rect);
+		rect.top = m_bShowReplaceUI ? m_arrUIRows[2].top : m_arrUIRows[1].top;
+		m_wndScope.SetWindowPos(nullptr, rect.left, rect.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
+		_CenterAlignControls(this, arrWnds, _countof(arrWnds));
+	}
 	for (auto pWnd : arrWnds)
 	{
-		if (bMoveWnd)
-		{
-			CRect rect;
-			pWnd->GetWindowRect(rect);
-			ScreenToClient(rect);
-			rect.top = m_bShowReplaceUI ? m_arrUIRows[2].top : m_arrUIRows[1].top;
-			pWnd->SetWindowPos(nullptr, rect.left, rect.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
-		}
 		pWnd->ShowWindow(bShow ? SW_SHOWNA : SW_HIDE);
 	}
 }
@@ -551,6 +583,7 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 	CQuickFindWndBase::OnSize(nType, cx, cy);
 
 	CRect rect;
+	InvalidateRect(nullptr);
 	//if (GetSizeGripperRect(rect))
 	//	InvalidateRect(rect);
 
@@ -655,8 +688,9 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 		{
 			enum {SnapSize = 15};
 			CRect rectOwnerWnd;
-			pWndOwner->GetWindowRect(rectOwnerWnd);
-			pWndOwner->ScreenToClient(rectOwnerWnd);
+			//pWndOwner->GetWindowRect(rectOwnerWnd);
+			//pWndOwner->ScreenToClient(rectOwnerWnd);
+			pWndOwner->GetClientRect(rectOwnerWnd);
 			CRect rectWnd;
 			GetWindowRect(&rectWnd);
 			CRect rect;
@@ -674,17 +708,17 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 				lpwndpos->x = rectOwnerWnd.left;
 				lpwndpos->cx = rect.Width();
 			}
+			else if (abs(rect.right - rectOwnerWnd.right) < SnapSize)
+			{
+				lpwndpos->x = rectOwnerWnd.right - rect.Width();
+				lpwndpos->cx = rect.Width();
+			}
 			if (abs(rect.top - rectOwnerWnd.top) < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.top;
 				lpwndpos->cy = rect.Height();
 			}
-			if (abs(rect.right - rectOwnerWnd.right) < SnapSize)
-			{
-				lpwndpos->x = rectOwnerWnd.right - rect.Width();
-				lpwndpos->cx = rect.Width();
-			}
-			if (abs(rect.bottom - rectOwnerWnd.bottom) < SnapSize)
+			else if (abs(rect.bottom - rectOwnerWnd.bottom) < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.bottom - rect.Height();
 				lpwndpos->cy = rect.Height();
@@ -887,7 +921,7 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 	GetWindowRect(rectDlg);
 	GetClientRect(rectClient);
 	int nRows = (m_bShowOptionsUI ? 1 : 0) + (m_bShowReplaceUI ? 1 : 0);
-	rectClient.bottom = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top;
+	rectClient.bottom = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top + 1;
 	ClientToScreen(rectClient);
 	rectDlg.bottom = rectClient.bottom;
 
@@ -930,4 +964,16 @@ void CQuickFindWnd::OnNcDestroy()
 {
 	NotifyOwner(QuickFindCmdTerminating);
 	CQuickFindWndBase::OnNcDestroy();
+}
+
+void CQuickFindWnd::OnSetFocus(CWnd* pOldWnd)
+{
+	InvalidateRect(nullptr);
+	CQuickFindWndBase::OnSetFocus(pOldWnd);
+}
+
+void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
+{
+	InvalidateRect(nullptr);
+	CQuickFindWndBase::OnKillFocus(pNewWnd);
 }

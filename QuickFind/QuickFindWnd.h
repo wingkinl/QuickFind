@@ -292,6 +292,8 @@ protected:
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
 	afx_msg void OnNcDestroy();
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnKillFocus(CWnd* pNewWnd);
 
 	DECLARE_MESSAGE_MAP()
 };
