@@ -230,7 +230,7 @@ private:
 	void PromoteFindTextItems();
 	void PromoteReplaceTextItems();
 protected:
-	CSearchComboBox	m_wndFind;	
+	CSearchComboBox	m_wndFind;
 	
 	CMenu			m_menuFindAction;
 	CMFCMenuButton	m_wndFindAction;

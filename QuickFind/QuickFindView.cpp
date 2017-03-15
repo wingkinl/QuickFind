@@ -101,9 +101,11 @@ void CQuickFindView::OnDestroy()
       pActiveItem->Deactivate();
       ASSERT(GetDocument()->GetInPlaceActiveItem(this) == NULL);
    }
-   if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()))
+   if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()) && _quickfindState.pQuickFindWnd->GetOwner() == this)
+   {
 	   _quickfindState.pQuickFindWnd->SendMessage(WM_CLOSE);
-   _quickfindState.pQuickFindWnd = nullptr;
+	   _quickfindState.pQuickFindWnd = nullptr;
+   }
    CRichEditView::OnDestroy();
 }
 
@@ -247,7 +249,8 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 	cfSel.dwEffects = 0;
 	cfSel.crBackColor = RGB(246,185,77);
 
-	if (FindText(pEditState))
+	BOOL bFound = FindText(pEditState);
+	if (bFound)
 	{
 		do
 		{
@@ -262,7 +265,7 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 
 	GetRichEditCtrl().SetSel(lInitialCursorPosition, lInitialCursorPosition);
 	GetRichEditCtrl().HideSelection(FALSE, FALSE);
-	return TRUE;
+	return bFound;
 }
 
 BOOL CQuickFindView::OnReplace(CQuickFindWndDemo* pQuickFindWnd)

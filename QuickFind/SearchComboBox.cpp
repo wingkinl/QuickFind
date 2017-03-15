@@ -6,6 +6,7 @@ IMPLEMENT_DYNAMIC(CSearchComboBox, CSearchComboBoxBase)
 
 CSearchComboBox::CSearchComboBox()
 {
+	m_bSearchOK = TRUE;
 }
 
 
@@ -14,6 +15,7 @@ CSearchComboBox::~CSearchComboBox()
 }
 
 BEGIN_MESSAGE_MAP(CSearchComboBox, CSearchComboBoxBase)
+	//ON_WM_PAINT()
 END_MESSAGE_MAP()
 
 typedef CComboBoxBrowseCtrlEdit	CSearchComboBoxEditBase;
@@ -111,16 +113,24 @@ void CSearchComboBoxEdit::OnAfterUpdate()
 {
 	CSearchComboBoxEditBase::OnAfterUpdate();
 	RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
-	CSearchComboBox* pParent = STATIC_DOWNCAST(CSearchComboBox, GetParent());
-	auto pComboParent = pParent->GetParent();
-	if (pComboParent->GetSafeHwnd())
-		pComboParent->SendMessage(WM_COMMAND, MAKEWPARAM(pParent->GetDlgCtrlID(), CBN_EDITCHANGE), (LPARAM)pParent->GetSafeHwnd());
+	CSearchComboBox* pComboBox = STATIC_DOWNCAST(CSearchComboBox, GetParent());
+	if (pComboBox)
+		pComboBox->OnAfterClearText();
 }
 
 BOOL CSearchComboBoxEdit::OnEnChange()
 {
 	RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 	return FALSE;	// allow parent to handle it too
+}
+
+void CSearchComboBox::OnAfterClearText()
+{
+	m_bSearchOK = TRUE;
+	RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	auto pParent = GetParent();
+	if (pParent->GetSafeHwnd())
+		pParent->SendMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_EDITCHANGE), (LPARAM)GetSafeHwnd());
 }
 
 std::unique_ptr<CComboBoxBrowseCtrlEdit> CSearchComboBox::CreateEditControl()
@@ -130,6 +140,25 @@ std::unique_ptr<CComboBoxBrowseCtrlEdit> CSearchComboBox::CreateEditControl()
 #else
 	return std::unique_ptr<CSearchComboBoxEdit>(new CSearchComboBoxEdit());
 #endif
+}
+
+void CSearchComboBox::OnPaint()
+{
+	if (m_bSearchOK || GetWindowTextLength() == 0)
+	{
+		CSearchComboBoxBase::OnPaint();
+		return;
+	}
+	CPaintDC dc(this);
+	CMemDC memDC(dc, this);
+	CDC* pDC = &memDC.GetDC();
+
+	CRect rectClient;
+	GetClientRect(rectClient);
+
+	pDC->FillSolidRect(rectClient, GetSysColor(COLOR_3DFACE));
+	CBrush br(RGB(255, 0, 0));
+	pDC->FrameRect(rectClient, &br);
 }
 
 void CSearchComboBox::Init()

@@ -80,7 +80,8 @@ END_MESSAGE_MAP()
 
 BOOL CQuickFindWnd::FindAccelerator(UINT uiCmd, CString& str) const
 {
-	ASSERT(m_pAccelTable);
+	if (!m_pAccelTable)
+		return FALSE;
 	BOOL bFound = FALSE;
 	for (int i = 0; i < m_nAccelSize; i++)
 	{
@@ -272,7 +273,7 @@ BOOL CQuickFindWnd::OnInitDialog()
 
 	m_hAccel = LoadAccelerators(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_QUICKFIND_ACCEL));
 	ASSERT(m_hAccel != NULL);
-	if (!m_pAccelTable)
+	if (m_hAccel)
 	{
 		m_nAccelSize = ::CopyAcceleratorTable(m_hAccel, NULL, 0);
 
@@ -428,7 +429,7 @@ void CQuickFindWnd::OnPaint()
 	}
 
 	auto pWndFocus = GetFocus();
-	auto pWndActive = GetActiveWindow();
+	//auto pWndActive = GetActiveWindow();
 	BOOL bHasFocus = pWndFocus == this || IsChild(pWndFocus);
 	rectGripper = rectClient;
 	rectGripper.top = rectGripper.bottom - QuickFindSizeAndFocusIndicatorHeight;
@@ -447,7 +448,6 @@ BOOL CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
 BOOL CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
 {
 	int nGripCX = GetSystemMetrics(SM_CXHSCROLL);
-	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
 	CRect rcClient;
 	GetClientRect(rcClient);
 	rectGripper = rcClient;
@@ -809,13 +809,19 @@ void CQuickFindWnd::OnUseRegEx()
 void CQuickFindWnd::OnSelChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
-		NotifyOwner(QuickFindCmdFindTextChange);
+	{
+		m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindTextChange);
+		m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	}
 }
 
 void CQuickFindWnd::OnEditChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
-		NotifyOwner(QuickFindCmdFindTextChange);
+	{
+		m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindTextChange);
+		m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	}
 }
 
 void CQuickFindWnd::OnSelChangeScope()
@@ -886,19 +892,22 @@ void CQuickFindWnd::PromoteReplaceTextItems()
 void CQuickFindWnd::OnFindNext()
 {
 	PromoteFindTextItems();
-	NotifyOwner(QuickFindCmdFind);
+	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnFindPrevious()
 {
 	PromoteFindTextItems();
-	NotifyOwner(QuickFindCmdFind);
+	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnFindAll()
 {
 	PromoteFindTextItems();
-	NotifyOwner(QuickFindCmdFindAll);
+	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindAll);
+	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnReplaceNext()
