@@ -73,6 +73,7 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_EDIT_REPLACE, &OnEditReplace)
 	ON_WM_SETFOCUS()
 	ON_WM_KILLFOCUS()
+	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
 
@@ -271,7 +272,9 @@ BOOL CQuickFindWnd::OnInitDialog()
 		m_arrUIRows[nRow].bottom = rect.bottom;
 	}
 
-	m_hAccel = LoadAccelerators(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_QUICKFIND_ACCEL));
+	auto resAccel = MAKEINTRESOURCE(IDR_QUICKFIND_ACCEL);
+	auto hInstance = AfxFindResourceHandle(resAccel, RT_ACCELERATOR);
+	m_hAccel = LoadAccelerators(hInstance, resAccel);
 	ASSERT(m_hAccel != NULL);
 	if (m_hAccel)
 	{
@@ -286,13 +289,13 @@ BOOL CQuickFindWnd::OnInitDialog()
 	m_wndFindAction.m_bDefaultClick = TRUE;
 	InitFindActionMenu();
 	int nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
-	VERIFY(InitButton(m_wndFindAction, nCurFindActionID));
-	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE));
-	VERIFY(InitButton(m_wndReplaceNext, ID_QUICKFIND_REPLACENEXT));
-	VERIFY(InitButton(m_wndReplaceAll, ID_QUICKFIND_REPLACEALL));
-	VERIFY(InitButton(m_wndMatchCase, ID_QUICKFIND_MATCHCASE));
-	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD));
-	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX));
+	VERIFY(InitButton(m_wndFindAction, nCurFindActionID, hInstance));
+	VERIFY(InitButton(m_wndClose, IDR_QUICKFIND_CLOSE, hInstance));
+	VERIFY(InitButton(m_wndReplaceNext, ID_QUICKFIND_REPLACENEXT, hInstance));
+	VERIFY(InitButton(m_wndReplaceAll, ID_QUICKFIND_REPLACEALL, hInstance));
+	VERIFY(InitButton(m_wndMatchCase, ID_QUICKFIND_MATCHCASE, hInstance));
+	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD, hInstance));
+	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX, hInstance));
 
 	VERIFY(InitCombo(m_wndFind, m_info.saSearch));
 	VERIFY(InitCombo(m_wndReplace, m_info.saReplace));
@@ -986,3 +989,10 @@ void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
 	InvalidateRect(nullptr);
 	CQuickFindWndBase::OnKillFocus(pNewWnd);
 }
+
+void CQuickFindWnd::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	InvalidateRect(nullptr);
+	CQuickFindWndBase::OnActivate(nState, pWndOther, bMinimized);
+}
+
