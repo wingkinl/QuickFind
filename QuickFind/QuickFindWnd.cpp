@@ -14,7 +14,6 @@ CQuickFindWnd::CQuickFindWnd()
 	: CQuickFindWndBase(IDD_QUICK_FIND_REPLACE)
 {
 	m_szLastClientSize.SetSize(0, 0);
-	m_nLastDlgHeight = 0;
 	m_bShowReplaceUI = FALSE;
 	m_bShowOptionsUI = TRUE;
 	ZeroMemory(&m_arrUIRows, sizeof(m_arrUIRows));
@@ -179,6 +178,7 @@ BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pParentWnd);
 	if (!bRet)
 		return FALSE;
+	SetOwner(pParentWnd);
 	return TRUE;
 }
 
@@ -255,12 +255,12 @@ BOOL CQuickFindWnd::OnInitDialog()
 
 	CRect rect;
 	GetClientRect(rect);
-	m_szLastClientSize = rect.Size();
+	m_szMaxClientSize = rect.Size();
+	m_szLastClientSize = m_szMaxClientSize;
 
 	CRect rectDlg;
 	GetWindowRect(rectDlg);
 	m_szMaxDlgSize = rectDlg.Size();
-	m_nLastDlgHeight = m_szMaxDlgSize.cy;
 
 	CWnd* arrWndRows[] = {&m_wndFind, &m_wndReplace, &m_wndScope};
 	static_assert(_countof(m_arrUIRows) == _countof(arrWndRows), "UI design breaking change?");
@@ -359,13 +359,13 @@ void CQuickFindWnd::UpdateWindowPos()
 		if (szDiff.cy > 0)
 			rectDlg.top = max(rectDlg.top - szDiff.cy, rectOwnerClient.top);
 		if (szDiff.cx > 0 || szDiff.cy > 0)
-			SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE);
+			SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 	}
 	else
 	{
 		int nLeft = max(rectOwnerClient.right - rectDlg.Width(), rectOwnerClient.left);
 		int nWidth = max(rectOwnerClient.right - nLeft, QuickFindMinTrackWidth);
-		SetWindowPos(nullptr, nLeft, rectOwnerClient.top, nWidth, rectDlg.Height(), 0);
+		SetWindowPos(nullptr, nLeft, rectOwnerClient.top, nWidth, rectDlg.Height(), SWP_NOZORDER|SWP_NOACTIVATE);
 	}
 }
 
@@ -389,7 +389,7 @@ void CQuickFindWnd::GetReplaceStringArray(CStringArray& sa) const
 	_GetComboStringArray(m_wndReplace, sa, m_info.nMaxItems);
 }
 
-BOOL CQuickFindWnd::OnEraseBkgnd(CDC* pDC)
+BOOL CQuickFindWnd::OnEraseBkgnd(CDC* /*pDC*/)
 {
 	return TRUE;
 }
@@ -456,6 +456,13 @@ BOOL CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper)
 	rectGripper = rcClient;
 	rectGripper.right = rectGripper.left + nGripCX;
 	return TRUE;
+}
+
+CSize CQuickFindWnd::CalcWindowSizeFromClient(CSize szClient) const
+{
+	szClient.cx += m_szMaxDlgSize.cx - m_szMaxClientSize.cx;
+	szClient.cy += m_szMaxDlgSize.cy - m_szMaxClientSize.cy;
+	return szClient;
 }
 
 LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
@@ -527,9 +534,8 @@ void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 	{
 		if (rect.bottom >= m_arrUIRows[nRow].bottom)
 		{
-			rect.bottom = m_arrUIRows[nRow].bottom + m_arrUIRows[0].top;
-			ClientToScreen(rect);
-			*pRect = rect;
+			int nNewClientHeight = m_arrUIRows[nRow].bottom + m_arrUIRows[0].top + 1;
+			pRect->bottom = pRect->top + CalcWindowSizeFromClient(CSize(0, nNewClientHeight)).cy;
 			BOOL bShowReplaceUI = m_bShowReplaceUI;
 			BOOL bShowOptionsUI = m_bShowOptionsUI;
 			switch (nRow)
@@ -613,11 +619,11 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 		ScreenToClient(rect);
 		rect.right += szDiff.cx;
 		HWND hWnd = pResizeWnd->GetSafeHwnd();
+		UINT nFlags = SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE;
 		if (hdwp)
-			hdwp = DeferWindowPos(hdwp, hWnd, NULL, -1, -1, rect.Width(), rect.Height(),
-				SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
+			hdwp = DeferWindowPos(hdwp, hWnd, NULL, -1, -1, rect.Width(), rect.Height(), nFlags);
 		else
-			pResizeWnd->MoveWindow(&rect);
+			pResizeWnd->SetWindowPos(NULL, -1, -1, rect.Width(), rect.Height(), nFlags);
 	}	
 	for (auto pAnchorWnd : arrWndAnchorRight)
 	{
@@ -625,11 +631,11 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 		ScreenToClient(rect);
 		rect.OffsetRect(szDiff.cx, 0);
 		HWND hWnd = pAnchorWnd->GetSafeHwnd();
+		UINT nFlags = SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE;
 		if (hdwp)
-			hdwp = DeferWindowPos(hdwp, hWnd, NULL, rect.left, rect.top, -1, -1,
-				SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
+			hdwp = DeferWindowPos(hdwp, hWnd, NULL, rect.left, rect.top, -1, -1, nFlags);
 		else
-			pAnchorWnd->MoveWindow(&rect);
+			pAnchorWnd->SetWindowPos(NULL, rect.left, rect.top, -1, -1, nFlags);
 	}
 	if (hdwp)
 		EndDeferWindowPos(hdwp);
@@ -736,13 +742,8 @@ void CQuickFindWnd::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 {
 	CQuickFindWndBase::OnGetMinMaxInfo(lpMMI);
 	lpMMI->ptMinTrackSize.x = QuickFindMinTrackWidth;
-	if (m_wndFind.GetSafeHwnd())
-	{
-		CRect rect;
-		m_wndFind.GetWindowRect(rect);
-		ScreenToClient(rect);
-		lpMMI->ptMinTrackSize.y = rect.bottom + rect.top;
-	}
+	int nMaxClientHeight = m_arrUIRows[0].top + m_arrUIRows[0].bottom + 1;
+	lpMMI->ptMinTrackSize.y = CalcWindowSizeFromClient(CSize(0, nMaxClientHeight)).cy;
 	if (m_szMaxDlgSize.cy)
 		lpMMI->ptMaxTrackSize.y = m_szMaxDlgSize.cy;
 }
@@ -929,17 +930,15 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 {
 	m_bShowReplaceUI = bShowAsReplace;
 	m_bShowOptionsUI = bShowOptions;
-	CRect rectDlg, rectClient;
+	CRect rectDlg;
 	GetWindowRect(rectDlg);
-	GetClientRect(rectClient);
+	CSize szDlg = rectDlg.Size();
 	int nRows = (m_bShowOptionsUI ? 1 : 0) + (m_bShowReplaceUI ? 1 : 0);
-	rectClient.bottom = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top + 1;
-	ClientToScreen(rectClient);
-	rectDlg.bottom = rectClient.bottom;
+	LONG nNewClientHeight = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top + 1;
+	szDlg.cy = CalcWindowSizeFromClient(CSize(0, nNewClientHeight)).cy;
 
 	ShowReplaceUI(m_bShowReplaceUI);
-	ShowOptionsUI(m_bShowOptionsUI);	
-	CSize szDlg = rectDlg.Size();
+	ShowOptionsUI(m_bShowOptionsUI);
 	SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
 }
 

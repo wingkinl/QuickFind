@@ -217,6 +217,8 @@ protected:
 
 	BOOL GetMoveGripperRect(CRect& rectGripper);
 	BOOL GetSizeGripperRect(CRect& rectGripper);
+
+	CSize CalcWindowSizeFromClient(CSize szClient) const;
 private:
 	void InitFindActionMenu();
 
@@ -246,7 +248,6 @@ protected:
 	CComboBox		m_wndScope;
 
 	CSize			m_szLastClientSize;
-	int				m_nLastDlgHeight;
 
 	BOOL			m_bShowReplaceUI;
 	BOOL			m_bShowOptionsUI;
@@ -258,7 +259,8 @@ protected:
 	};
 	Row				m_arrUIRows[3];
 
-	CSize			m_szMaxDlgSize;
+	CSize			m_szMaxDlgSize;	// assumption: the initial window is the maximum state
+	CSize			m_szMaxClientSize;
 
 	HACCEL			m_hAccel;
 	ACCEL*			m_pAccelTable;

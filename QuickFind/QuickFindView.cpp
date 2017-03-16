@@ -180,6 +180,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	if (_quickfindState.pQuickFindWnd)
 	{
 		_quickfindState.pQuickFindWnd->SetParent(this);
+		_quickfindState.pQuickFindWnd->SetOwner(this);
 		_quickfindState.pQuickFindWnd->SendMessage(WM_COMMAND, bFind ? ID_EDIT_FIND : ID_EDIT_REPLACE);
 		_quickfindState.pQuickFindWnd->SetFindString(strFind);
 		_quickfindState.pQuickFindWnd->SetActiveShowWindow();
