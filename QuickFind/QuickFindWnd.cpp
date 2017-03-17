@@ -179,6 +179,11 @@ BOOL CQuickFindWnd::InitCombo(CComboBox& combo, const CStringArray& saText)
 BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 {
 	m_info = info;
+	// left vs right, top vs bottom, they should be mutually exclusive.
+	if (m_info.IsDockLeft() && m_info.IsDockRight())
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockLeft;
+	if (m_info.IsDockTop() && m_info.IsDockBottom())
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockBottom;
 	m_pWndOwner = pParentWnd;
 	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pParentWnd);
 	if (!bRet)
@@ -360,29 +365,78 @@ enum {
 
 void CQuickFindWnd::UpdateWindowPos()
 {
+	if (m_info.IsFloating())
+		return;
 	auto pWndParent = GetParent();
 	ASSERT_VALID(pWndParent);
-	CRect rectOwnerClient;
-	pWndParent->GetClientRect(rectOwnerClient);
+	CRect rectOwner;
+	pWndParent->GetClientRect(rectOwner);
 	CRect rectDlg;
 	GetWindowRect(rectDlg);
-	if (m_info.IsFreeMove())
+	// Don't send WM_WINDOWPOSCHANGING to avoid auto snapping to parent during this procedure.
+	if (m_info.IsDocked())
 	{
-		// in case the window was moved outside the client area, move it to proper place
+		// left vs right, top vs bottom, they should be mutually exclusive.
+		CSize szDlg = rectDlg.Size();
 		pWndParent->ScreenToClient(rectDlg);
-		CSize szDiff(rectDlg.right - rectOwnerClient.right, rectDlg.bottom - rectOwnerClient.bottom);
-		if (szDiff.cx > 0)
-			rectDlg.left = max(rectDlg.left - szDiff.cx, rectOwnerClient.left);
-		if (szDiff.cy > 0)
-			rectDlg.top = max(rectDlg.top - szDiff.cy, rectOwnerClient.top);
-		if (szDiff.cx > 0 || szDiff.cy > 0)
-			SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
+		if (m_info.IsDockLeft())
+		{
+			rectDlg.left = rectOwner.left;
+		}
+		else if (m_info.IsDockRight())
+		{
+			rectDlg.left = max(rectOwner.right - szDlg.cx, rectOwner.left);
+			szDlg.cx = max(rectOwner.right - rectDlg.left, QuickFindMinTrackWidth);
+		}
+		if (m_info.IsDockTop())
+		{
+			rectDlg.top = rectOwner.top;
+		}
+		else if (m_info.IsDockBottom())
+		{
+			rectDlg.top = rectOwner.bottom - szDlg.cy;
+		}
+		rectDlg.right = rectDlg.left + szDlg.cx;
+		rectDlg.bottom = rectDlg.top + szDlg.cy;
+		// restrain in owner client
+		if (rectDlg.left < rectOwner.left)
+		{
+			rectDlg.left = rectOwner.left;
+			rectDlg.right = rectDlg.left + szDlg.cx;
+		}
+		if (rectDlg.top < rectOwner.top)
+		{
+			rectDlg.top = rectOwner.top;
+			rectDlg.bottom = rectDlg.top + szDlg.cy;
+		}
+		if (rectDlg.right > rectOwner.right)
+		{
+			rectDlg.right = rectOwner.right;
+			rectDlg.left = rectDlg.right - szDlg.cx;
+		}
+		if (rectDlg.bottom > rectOwner.bottom)
+		{
+			rectDlg.bottom = rectOwner.bottom;
+			rectDlg.top = rectDlg.bottom - szDlg.cy;
+		}
+
+		UINT nFlags = SWP_NOSENDCHANGING | SWP_NOZORDER | SWP_NOACTIVATE;
+		SetWindowPos(nullptr, rectDlg.left, rectDlg.top, szDlg.cx, szDlg.cy, nFlags);
 	}
 	else
 	{
-		int nLeft = max(rectOwnerClient.right - rectDlg.Width(), rectOwnerClient.left);
-		int nWidth = max(rectOwnerClient.right - nLeft, QuickFindMinTrackWidth);
-		SetWindowPos(nullptr, nLeft, rectOwnerClient.top, nWidth, rectDlg.Height(), SWP_NOZORDER|SWP_NOACTIVATE);
+		// in case the window was moved outside the client area, move it to proper place
+		pWndParent->ScreenToClient(rectDlg);
+		CSize szDiff(rectDlg.right - rectOwner.right, rectDlg.bottom - rectOwner.bottom);
+		if (szDiff.cx > 0)
+			rectDlg.left = max(rectDlg.left - szDiff.cx, rectOwner.left);
+		if (szDiff.cy > 0)
+			rectDlg.top = max(rectDlg.top - szDiff.cy, rectOwner.top);
+		if (szDiff.cx > 0 || szDiff.cy > 0)
+		{
+			UINT nFlags = SWP_NOSIZE | SWP_NOSENDCHANGING | SWP_NOZORDER | SWP_NOACTIVATE;
+			SetWindowPos(nullptr, rectDlg.left, rectDlg.top, -1, -1, nFlags);
+		}
 	}
 }
 
@@ -660,10 +714,36 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 {
 	CQuickFindWndBase::OnMoving(nSide, lpRect);
-
-	if (m_info.IsFreeMove())
+	if (m_info.IsFloating())
+		return;
+	if (m_info.IsDocked())
 	{
-		// restrain in owner
+		auto pWndOwner = GetNotifyOwner();
+		if (!pWndOwner->GetSafeHwnd())
+			return;
+		CRect rectOldWnd;
+		GetWindowRect(rectOldWnd);
+
+		CRect rectNew = *lpRect;
+		if (rectOldWnd == rectNew)
+			return;
+
+		CRect rectOwner;
+		pWndOwner->GetClientRect(rectOwner);
+		pWndOwner->ClientToScreen(rectOwner);
+
+		if (rectNew.left != rectOwner.left)
+			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockLeft;
+		if (rectNew.top != rectOwner.top)
+			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockTop;
+		if (rectNew.right != rectOwner.right)
+			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockRight;
+		if (rectNew.bottom != rectOwner.bottom)
+			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockBottom;
+	}
+	else
+	{
+		// restrain in owner client
 		auto pWndOwner = GetNotifyOwner();
 		if (!pWndOwner->GetSafeHwnd())
 			return;
@@ -676,34 +756,36 @@ void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 		{
 			rectNew.left = rectOwner.left;
 			rectNew.right = rectNew.left + szNew.cx;
+			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockLeft;
 		}
 		if (rectNew.top < rectOwner.top)
 		{
 			rectNew.top = rectOwner.top;
 			rectNew.bottom = rectNew.top + szNew.cy;
+			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockTop;
 		}
 		if (rectNew.right > rectOwner.right)
 		{
 			rectNew.right = rectOwner.right;
 			rectNew.left = rectNew.right - szNew.cx;
+			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockRight;
 		}
 		if (rectNew.bottom > rectOwner.bottom)
 		{
 			rectNew.bottom = rectOwner.bottom;
 			rectNew.top = rectNew.bottom - szNew.cy;
+			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockBottom;
 		}
 		*lpRect = rectNew;
-	}
-	else
-	{
-		m_info.dwFlags |= QUICKFIND_INFO::FlagsFreeMove;
 	}
 }
 
 void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 {
 	CQuickFindWndBase::OnWindowPosChanging(lpwndpos);
-	if ((lpwndpos->flags & SWP_NOMOVE) == 0 && m_info.IsFreeMove())
+	if (m_info.IsFloating())
+		return;
+	if ((lpwndpos->flags & SWP_NOMOVE) == 0 && !m_info.IsDocked())
 	{
 		// snap to parent window
 		auto pParent = GetParent();
@@ -723,29 +805,30 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 			{
 				rect.SetRect(lpwndpos->x, lpwndpos->y, lpwndpos->x + lpwndpos->cx, lpwndpos->y + lpwndpos->cy);
 			}
-			int cx = rect.Width();
 			if (rect.left - rectOwnerWnd.left < SnapSize)
 			{
 				lpwndpos->x = rectOwnerWnd.left;
 				lpwndpos->cx = rect.Width();
+				m_info.dwFlags |= QUICKFIND_INFO::FlagsDockLeft;
 			}
 			else if (rectOwnerWnd.right - rect.right < SnapSize)
 			{
 				lpwndpos->x = rectOwnerWnd.right - rect.Width();
 				lpwndpos->cx = rect.Width();
+				m_info.dwFlags |= QUICKFIND_INFO::FlagsDockRight;
 			}
 			if (rect.top - rectOwnerWnd.top < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.top;
 				lpwndpos->cy = rect.Height();
+				m_info.dwFlags |= QUICKFIND_INFO::FlagsDockTop;
 			}
 			else if (rectOwnerWnd.bottom - rect.bottom < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.bottom - rect.Height();
 				lpwndpos->cy = rect.Height();
+				m_info.dwFlags |= QUICKFIND_INFO::FlagsDockBottom;
 			}
-			if (lpwndpos->y == rectOwnerWnd.top && lpwndpos->x + cx == rectOwnerWnd.right)
-				m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFreeMove;
 		}
 	}
 }

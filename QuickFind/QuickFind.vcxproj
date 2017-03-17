@@ -190,6 +190,7 @@
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="QuickFind.h" />
     <ClInclude Include="QuickFindDoc.h" />
+    <ClInclude Include="QuickFindInfo.h" />
     <ClInclude Include="QuickFindView.h" />
     <ClInclude Include="QuickFindWnd.h" />
     <ClInclude Include="Resource.h" />

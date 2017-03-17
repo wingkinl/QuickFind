@@ -144,7 +144,7 @@ std::unique_ptr<CComboBoxBrowseCtrlEdit> CSearchComboBox::CreateEditControl()
 
 HBRUSH CSearchComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-	if (CTLCOLOR_EDIT == nCtlColor && !m_bSearchOK && GetWindowTextLength())
+	if (CTLCOLOR_EDIT == nCtlColor && !m_bSearchOK)
 	{
 		//COLORREF crfBK = RGB(0xf9, 0xf2, 0xf4);
 		//pDC->SetTextColor(RGB(0xc7,0x25,0x4e));

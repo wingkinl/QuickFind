@@ -224,7 +224,7 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 	ASSERT_VALID(pQuickFindWnd);
 	ASSERT_VALID(this);
 	_AFX_RICHEDIT_STATE* pEditState = _afxRichEditState;
-	pEditState->strFind = pQuickFindWnd->GetFindString();
+	pEditState->strFind = pQuickFindWnd->GetFindString();	
 	pEditState->bCase = pQuickFindWnd->IsMatchCase();
 	pEditState->bWord = pQuickFindWnd->IsMatchWholeWord();
 	pEditState->bNext = pQuickFindWnd->IsFindReplaceNext();
@@ -243,24 +243,28 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 	GetRichEditCtrl().SetSelectionCharFormat(cf);
 	GetRichEditCtrl().SetSel(0, 0);
 
-	CHARFORMAT2 cfSel;
-	cfSel.cbSize = sizeof(cfSel);
-	cfSel.dwMask = CFM_BACKCOLOR;
-	cfSel.dwEffects = 0;
-	cfSel.crBackColor = RGB(246,185,77);
-
-	BOOL bFound = FindText(pEditState);
-	if (bFound)
+	BOOL bFound = TRUE;
+	if (!pEditState->strFind.IsEmpty())
 	{
-		do
+		CHARFORMAT2 cfSel;
+		cfSel.cbSize = sizeof(cfSel);
+		cfSel.dwMask = CFM_BACKCOLOR;
+		cfSel.dwEffects = 0;
+		cfSel.crBackColor = RGB(246, 185, 77);
+
+		bFound = FindText(pEditState);
+		if (bFound)
 		{
-			GetRichEditCtrl().GetSel(ft.chrg);
-			GetRichEditCtrl().SetSelectionCharFormat(cfSel);
-			if (ft.chrg.cpMin < lInitialCursorPosition)
+			do
 			{
-				lInitialCursorPosition += pEditState->strReplace.GetLength() - pEditState->strFind.GetLength();
-			}
-		} while (FindText(pEditState));
+				GetRichEditCtrl().GetSel(ft.chrg);
+				GetRichEditCtrl().SetSelectionCharFormat(cfSel);
+				if (ft.chrg.cpMin < lInitialCursorPosition)
+				{
+					lInitialCursorPosition += pEditState->strReplace.GetLength() - pEditState->strFind.GetLength();
+				}
+			} while (FindText(pEditState));
+		}
 	}
 
 	GetRichEditCtrl().SetSel(lInitialCursorPosition, lInitialCursorPosition);
