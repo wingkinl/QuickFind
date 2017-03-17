@@ -54,6 +54,9 @@
     <ClInclude Include="SearchComboBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="QuickFindInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QuickFind.cpp">
@@ -136,6 +139,12 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\FindPrevious.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Dock.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Float.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

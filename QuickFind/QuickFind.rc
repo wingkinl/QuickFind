@@ -105,6 +105,10 @@ ID_QUICKFIND_PREVIOUS   ICON                    "res\\FindPrevious.ico"
 
 ID_QUICKFIND_ALL        ICON                    "res\\FindMag.ico"
 
+ID_QUICKFIND_DOCK       ICON                    "res\\Dock.ico"
+
+ID_QUICKFIND_FLOAT      ICON                    "res\\Float.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

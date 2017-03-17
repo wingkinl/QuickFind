@@ -49,6 +49,8 @@
 #define ID_QUICKFIND_REGEX              319
 #define ID_QUICKFIND_SCOPE              320
 #define IDR_QUICKFIND_ACTION            321
+#define ID_QUICKFIND_DOCK               325
+#define ID_QUICKFIND_FLOAT              326
 #define ID_CANCEL_EDIT_CNTR             32768
 #define ID_DUMMY_FINDNEXT               32775
 #define ID_DUMMY_FINDPREVIOUS           32776
@@ -58,7 +60,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        325
+#define _APS_NEXT_RESOURCE_VALUE        327
 #define _APS_NEXT_COMMAND_VALUE         32784
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310

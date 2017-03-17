@@ -190,6 +190,7 @@
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="QuickFind.h" />
     <ClInclude Include="QuickFindDoc.h" />
+    <ClInclude Include="QuickFindInfo.h" />
     <ClInclude Include="QuickFindView.h" />
     <ClInclude Include="QuickFindWnd.h" />
     <ClInclude Include="Resource.h" />
@@ -218,11 +219,13 @@
     <ResourceCompile Include="QuickFind.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\Dock.ico" />
     <Image Include="res\FindClear.ico" />
     <Image Include="res\FindClose.ico" />
     <Image Include="res\FindMag.ico" />
     <Image Include="res\FindNext.ico" />
     <Image Include="res\FindPrevious.ico" />
+    <Image Include="res\Float.ico" />
     <Image Include="res\MatchCase.ico" />
     <Image Include="res\MatchWord.ico" />
     <Image Include="res\QuickFind.ico" />
