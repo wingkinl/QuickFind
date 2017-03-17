@@ -19,7 +19,9 @@ protected:
 
 	std::unique_ptr<CComboBoxBrowseCtrlEdit> CreateEditControl() override;
 protected:
-	afx_msg void OnPaint();
+	CBrush	m_brErr;
+protected:
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 
 	DECLARE_MESSAGE_MAP()
 };

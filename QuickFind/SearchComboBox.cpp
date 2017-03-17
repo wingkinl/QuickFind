@@ -15,7 +15,7 @@ CSearchComboBox::~CSearchComboBox()
 }
 
 BEGIN_MESSAGE_MAP(CSearchComboBox, CSearchComboBoxBase)
-	//ON_WM_PAINT()
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 typedef CComboBoxBrowseCtrlEdit	CSearchComboBoxEditBase;
@@ -142,23 +142,21 @@ std::unique_ptr<CComboBoxBrowseCtrlEdit> CSearchComboBox::CreateEditControl()
 #endif
 }
 
-void CSearchComboBox::OnPaint()
+HBRUSH CSearchComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-	if (m_bSearchOK || GetWindowTextLength() == 0)
+	if (CTLCOLOR_EDIT == nCtlColor && !m_bSearchOK && GetWindowTextLength())
 	{
-		CSearchComboBoxBase::OnPaint();
-		return;
+		//COLORREF crfBK = RGB(0xf9, 0xf2, 0xf4);
+		//pDC->SetTextColor(RGB(0xc7,0x25,0x4e));
+		COLORREF crfBK = RGB(0xf2, 0xde, 0xde);
+		pDC->SetTextColor(RGB(0xa9,0x44,0x42));
+		pDC->SetBkColor(crfBK);
+		pDC->SetBkMode(TRANSPARENT);
+		if (!m_brErr.GetSafeHandle())
+			m_brErr.CreateSolidBrush(crfBK);
+		return (HBRUSH)m_brErr.GetSafeHandle();
 	}
-	CPaintDC dc(this);
-	CMemDC memDC(dc, this);
-	CDC* pDC = &memDC.GetDC();
-
-	CRect rectClient;
-	GetClientRect(rectClient);
-
-	pDC->FillSolidRect(rectClient, GetSysColor(COLOR_3DFACE));
-	CBrush br(RGB(255, 0, 0));
-	pDC->FrameRect(rectClient, &br);
+	return CSearchComboBoxBase::OnCtlColor(pDC, pWnd, nCtlColor);
 }
 
 void CSearchComboBox::Init()

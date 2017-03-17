@@ -154,6 +154,9 @@ public:
 
 	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
 
+	void SetNotifyOwner(CWnd* pWndOwner);
+	CWnd* GetNotifyOwner() const;
+
 	BOOL SetScopeItems(const CStringArray& saItems, int nActiveIndex = 0);
 
 	BOOL OnInitDialog() override;
@@ -267,6 +270,9 @@ protected:
 	int				m_nAccelSize;
 
 	QUICKFIND_INFO	m_info;
+
+	BOOL			m_bActive;
+	CWnd*			m_pWndOwner;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
@@ -297,6 +303,8 @@ protected:
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	afx_msg void OnKillFocus(CWnd* pNewWnd);
 	afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
+	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
 
 	DECLARE_MESSAGE_MAP()
 };

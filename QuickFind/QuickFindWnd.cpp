@@ -20,6 +20,8 @@ CQuickFindWnd::CQuickFindWnd()
 	m_hAccel = nullptr;
 	m_pAccelTable = nullptr;
 	m_nAccelSize = 0;
+	m_bActive = FALSE;
+	m_pWndOwner = nullptr;
 }
 
 CQuickFindWnd::~CQuickFindWnd()
@@ -73,6 +75,8 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_SETFOCUS()
 	ON_WM_KILLFOCUS()
 	ON_WM_ACTIVATE()
+	ON_WM_MOUSEACTIVATE()
+	ON_MESSAGE(WM_IDLEUPDATECMDUI, &OnIdleUpdateCmdUI)
 END_MESSAGE_MAP()
 
 
@@ -115,7 +119,7 @@ void CQuickFindWnd::PostNcDestroy()
 
 void CQuickFindWnd::OnCancel()
 {
-	auto pWndOwner = GetOwner();
+	auto pWndOwner = GetNotifyOwner();
 	if (pWndOwner->GetSafeHwnd())
 	{
 		pWndOwner->SetFocus();
@@ -175,11 +179,24 @@ BOOL CQuickFindWnd::InitCombo(CComboBox& combo, const CStringArray& saText)
 BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 {
 	m_info = info;
+	m_pWndOwner = pParentWnd;
 	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pParentWnd);
 	if (!bRet)
 		return FALSE;
-	SetOwner(pParentWnd);
 	return TRUE;
+}
+
+void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
+{
+	ASSERT_VALID(pWndOwner);
+	m_pWndOwner = pWndOwner;
+	SetParent(m_pWndOwner);
+	m_pWndOwner->ModifyStyle(0, WS_CLIPCHILDREN);
+}
+
+CWnd* CQuickFindWnd::GetNotifyOwner() const
+{
+	return m_pWndOwner;
 }
 
 BOOL CQuickFindWnd::SetScopeItems(const CStringArray& saItems, int nActiveIndex)
@@ -343,16 +360,16 @@ enum {
 
 void CQuickFindWnd::UpdateWindowPos()
 {
-	auto pWndOwner = GetOwner();
-	ASSERT_VALID(pWndOwner);
+	auto pWndParent = GetParent();
+	ASSERT_VALID(pWndParent);
 	CRect rectOwnerClient;
-	pWndOwner->GetClientRect(rectOwnerClient);
+	pWndParent->GetClientRect(rectOwnerClient);
 	CRect rectDlg;
 	GetWindowRect(rectDlg);
 	if (m_info.IsFreeMove())
 	{
 		// in case the window was moved outside the client area, move it to proper place
-		pWndOwner->ScreenToClient(rectDlg);
+		pWndParent->ScreenToClient(rectDlg);
 		CSize szDiff(rectDlg.right - rectOwnerClient.right, rectDlg.bottom - rectOwnerClient.bottom);
 		if (szDiff.cx > 0)
 			rectDlg.left = max(rectDlg.left - szDiff.cx, rectOwnerClient.left);
@@ -431,12 +448,9 @@ void CQuickFindWnd::OnPaint()
 		nOffset += nBoxSize;
 	}
 
-	auto pWndFocus = GetFocus();
-	//auto pWndActive = GetActiveWindow();
-	BOOL bHasFocus = pWndFocus == this || IsChild(pWndFocus);
 	rectGripper = rectClient;
 	rectGripper.top = rectGripper.bottom - QuickFindSizeAndFocusIndicatorHeight;
-	pDC->FillSolidRect(rectGripper, bHasFocus ? RGB(0,122,204) : RGB(204,206,219));
+	pDC->FillSolidRect(rectGripper, m_bActive ? RGB(0,122,204) : RGB(204,206,219));
 }
 
 BOOL CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper)
@@ -592,7 +606,7 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 	CQuickFindWndBase::OnSize(nType, cx, cy);
 
 	CRect rect;
-	InvalidateRect(nullptr);
+	Invalidate();
 	//if (GetSizeGripperRect(rect))
 	//	InvalidateRect(rect);
 
@@ -650,7 +664,7 @@ void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 	if (m_info.IsFreeMove())
 	{
 		// restrain in owner
-		auto pWndOwner = GetOwner();
+		auto pWndOwner = GetNotifyOwner();
 		if (!pWndOwner->GetSafeHwnd())
 			return;
 		CRect rectNew = *lpRect;
@@ -691,20 +705,18 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 	CQuickFindWndBase::OnWindowPosChanging(lpwndpos);
 	if ((lpwndpos->flags & SWP_NOMOVE) == 0 && m_info.IsFreeMove())
 	{
-		// snap to owner window
-		auto pWndOwner = GetOwner();
-		if (pWndOwner->GetSafeHwnd())
+		// snap to parent window
+		auto pParent = GetParent();
+		if (pParent->GetSafeHwnd())
 		{
 			enum {SnapSize = 15};
 			CRect rectOwnerWnd;
-			//pWndOwner->GetWindowRect(rectOwnerWnd);
-			//pWndOwner->ScreenToClient(rectOwnerWnd);
-			pWndOwner->GetClientRect(rectOwnerWnd);
-			CRect rectWnd;
-			GetWindowRect(&rectWnd);
+			pParent->GetClientRect(rectOwnerWnd);
 			CRect rect;
 			if (lpwndpos->flags & SWP_NOSIZE)
 			{
+				CRect rectWnd;
+				GetWindowRect(&rectWnd);
 				rect.SetRect(lpwndpos->x, lpwndpos->y, lpwndpos->x + rectWnd.Width(), lpwndpos->y + rectWnd.Height());
 			}
 			else
@@ -712,22 +724,22 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 				rect.SetRect(lpwndpos->x, lpwndpos->y, lpwndpos->x + lpwndpos->cx, lpwndpos->y + lpwndpos->cy);
 			}
 			int cx = rect.Width();
-			if (abs(rect.left - rectOwnerWnd.left) < SnapSize)
+			if (rect.left - rectOwnerWnd.left < SnapSize)
 			{
 				lpwndpos->x = rectOwnerWnd.left;
 				lpwndpos->cx = rect.Width();
 			}
-			else if (abs(rect.right - rectOwnerWnd.right) < SnapSize)
+			else if (rectOwnerWnd.right - rect.right < SnapSize)
 			{
 				lpwndpos->x = rectOwnerWnd.right - rect.Width();
 				lpwndpos->cx = rect.Width();
 			}
-			if (abs(rect.top - rectOwnerWnd.top) < SnapSize)
+			if (rect.top - rectOwnerWnd.top < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.top;
 				lpwndpos->cy = rect.Height();
 			}
-			else if (abs(rect.bottom - rectOwnerWnd.bottom) < SnapSize)
+			else if (rectOwnerWnd.bottom - rect.bottom < SnapSize)
 			{
 				lpwndpos->y = rectOwnerWnd.bottom - rect.Height();
 				lpwndpos->cy = rect.Height();
@@ -944,7 +956,7 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 
 LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd, WPARAM wp, LPARAM lp)
 {
-	auto pWndOwner = GetOwner();
+	auto pWndOwner = GetNotifyOwner();
 	if (pWndOwner->GetSafeHwnd())
 	{
 		QNMHDR nmhdr = {this, wp, lp};
@@ -979,19 +991,50 @@ void CQuickFindWnd::OnNcDestroy()
 
 void CQuickFindWnd::OnSetFocus(CWnd* pOldWnd)
 {
-	InvalidateRect(nullptr);
+	m_bActive = TRUE;
+	Invalidate();
 	CQuickFindWndBase::OnSetFocus(pOldWnd);
 }
 
 void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
 {
-	InvalidateRect(nullptr);
+	m_bActive = FALSE;
+	Invalidate();
 	CQuickFindWndBase::OnKillFocus(pNewWnd);
 }
 
 void CQuickFindWnd::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	InvalidateRect(nullptr);
+	m_bActive = TRUE;
+	Invalidate();
 	CQuickFindWndBase::OnActivate(nState, pWndOther, bMinimized);
+}
+
+int CQuickFindWnd::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
+{
+	CWnd* pFocus = GetFocus();
+	BOOL bActive = pFocus->GetSafeHwnd() != NULL && (IsChild(pFocus) || pFocus->GetSafeHwnd() == GetSafeHwnd());
+	if (!bActive)
+		SetFocus();
+	m_bActive = TRUE;
+	Invalidate();
+	return CQuickFindWndBase::OnMouseActivate(pDesktopWnd, nHitTest, message);
+}
+
+LRESULT CQuickFindWnd::OnIdleUpdateCmdUI(WPARAM /*wParam*/, LPARAM)
+{
+	if ((GetStyle() & WS_VISIBLE))
+	{
+		CWnd* pFocus = GetFocus();
+		BOOL bActiveOld = m_bActive;
+
+		m_bActive = (pFocus->GetSafeHwnd() != NULL && (IsChild(pFocus) || pFocus->GetSafeHwnd() == GetSafeHwnd()));
+
+		if (m_bActive != bActiveOld)
+		{
+			Invalidate();
+		}
+	}
+	return 0L;
 }
 
