@@ -140,7 +140,7 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst, in
 	auto resName = MAKEINTRESOURCE(nID);
 	if (!hResInst)
 	{
-		hResInst = AfxFindResourceHandle(resName, RT_ICON);
+		hResInst = AfxFindResourceHandle(resName, RT_GROUP_ICON);
 		if (!hResInst)
 		{
 			return FALSE;
