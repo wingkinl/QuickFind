@@ -104,6 +104,7 @@ void CQuickFindView::OnDestroy()
    if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()) && _quickfindState.pQuickFindWnd->GetOwner() == this)
    {
 	   _quickfindState.pQuickFindWnd->SendMessage(WM_CLOSE);
+	   _quickfindState.pQuickFindWnd->SetOwner(nullptr);
 	   _quickfindState.pQuickFindWnd = nullptr;
    }
    CRichEditView::OnDestroy();

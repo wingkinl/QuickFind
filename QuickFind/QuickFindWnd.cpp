@@ -8,6 +8,9 @@
 
 // CQuickFindWnd dialog
 
+#define QFTIMER_ID_DOCK_EVENT	1000
+#define QFTIMER_DOCK_TIMEOUT	500
+
 IMPLEMENT_DYNAMIC(CQuickFindWnd, CQuickFindWndBase)
 
 CQuickFindWnd::CQuickFindWnd()
@@ -21,8 +24,7 @@ CQuickFindWnd::CQuickFindWnd()
 	m_pAccelTable = nullptr;
 	m_nAccelSize = 0;
 	m_bActive = FALSE;
-	m_pWndOwner = nullptr;
-	m_hIconDockFloat = nullptr;
+	m_nDockTimerID = 0;
 }
 
 CQuickFindWnd::~CQuickFindWnd()
@@ -44,11 +46,13 @@ void CQuickFindWnd::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, ID_QUICKFIND_MATCHWORD, m_wndMatchWord);
 	DDX_Control(pDX, ID_QUICKFIND_REGEX, m_wndRegEx);
 	DDX_Control(pDX, ID_QUICKFIND_SCOPE, m_wndScope);
+	DDX_Control(pDX, ID_QUICKFIND_FLOAT, m_wndDockFloat);
 }
 
 static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
+	ON_WM_DESTROY()
 	ON_WM_NCDESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_PAINT()
@@ -73,11 +77,14 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_QUICKFIND_REPLACEALL, &OnReplaceAll)
 	ON_COMMAND(ID_EDIT_FIND, &OnEditFind)
 	ON_COMMAND(ID_EDIT_REPLACE, &OnEditReplace)
+	ON_COMMAND(ID_QUICKFIND_FLOAT, &OnSwitchFloatDock)
 	ON_WM_SETFOCUS()
 	ON_WM_KILLFOCUS()
+	ON_WM_NCACTIVATE()
 	ON_WM_ACTIVATE()
 	ON_WM_MOUSEACTIVATE()
 	ON_MESSAGE(WM_IDLEUPDATECMDUI, &OnIdleUpdateCmdUI)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -120,7 +127,7 @@ void CQuickFindWnd::PostNcDestroy()
 
 void CQuickFindWnd::OnCancel()
 {
-	auto pWndOwner = GetNotifyOwner();
+	auto pWndOwner = GetOwner();
 	if (pWndOwner->GetSafeHwnd())
 	{
 		pWndOwner->SetFocus();
@@ -128,7 +135,7 @@ void CQuickFindWnd::OnCancel()
 	CQuickFindWndBase::OnCancel();
 }
 
-BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) const
+BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst, int nImgSize) const
 {
 	auto resName = MAKEINTRESOURCE(nID);
 	if (!hResInst)
@@ -143,7 +150,7 @@ BOOL CQuickFindWnd::InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst) co
 	//btn.m_bTransparent = TRUE;
 	btn.SetWindowText(_T(""));
 
-	auto hIcon = (HICON)LoadImage(hResInst, resName, IMAGE_ICON, 16, 16, LR_SHARED);
+	auto hIcon = (HICON)LoadImage(hResInst, resName, IMAGE_ICON, nImgSize, nImgSize, LR_SHARED);
 	btn.SetImage(hIcon);
 
 	CString strTooltip;
@@ -185,24 +192,65 @@ BOOL CQuickFindWnd::Create(const QUICKFIND_INFO& info, CWnd* pParentWnd)
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockLeft;
 	if (m_info.IsDockTop() && m_info.IsDockBottom())
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockBottom;
-	m_pWndOwner = pParentWnd;
 	BOOL bRet = CQuickFindWndBase::Create(IDD_QUICK_FIND_REPLACE, pParentWnd);
 	if (!bRet)
 		return FALSE;
+	SwitchFloatDock(m_info.IsFloating(), pParentWnd);
 	return TRUE;
+}
+
+const int g_szDockFloatBtnSize = 10;
+
+void CQuickFindWnd::OnSwitchFloatDock()
+{
+	BOOL bFloat = m_wndDockFloat.GetCheck() != BST_UNCHECKED;
+	SwitchFloatDock(bFloat, GetOwner());
+}
+
+void CQuickFindWnd::SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner)
+{
+	VERIFY(InitButton(m_wndDockFloat, bFloat ? ID_QUICKFIND_DOCK : ID_QUICKFIND_FLOAT, nullptr, g_szDockFloatBtnSize));
+	if (bFloat)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsFloat;
+	else
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFloat;
+
+	// SetParent below triggers OnWindowPosChanging, so need to backup it for restoring
+	CRect rect;
+	GetWindowRect(rect);
+	DWORD dwOldDockFlags = m_info.dwFlags & QUICKFIND_INFO::FlagsDockMask;
+	SetNotifyOwner(pWndOwner);
+	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockMask;
+	m_info.dwFlags |= dwOldDockFlags;
+
+	UINT nFlags = SWP_NOZORDER | SWP_NOSIZE | SWP_NOOWNERZORDER;
+	if (bFloat)
+	{
+		SetWindowPos(&wndTop, rect.left, rect.top, rect.Width(), rect.Height(), nFlags);
+	}
+	else
+	{
+		pWndOwner->ScreenToClient(rect);
+		SetWindowPos(nullptr, rect.left, rect.top, -1, -1, nFlags);
+		UpdateWindowPos();
+	}
 }
 
 void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 {
 	ASSERT_VALID(pWndOwner);
-	m_pWndOwner = pWndOwner;
-	SetParent(m_pWndOwner);
-	m_pWndOwner->ModifyStyle(0, WS_CLIPCHILDREN);
-}
-
-CWnd* CQuickFindWnd::GetNotifyOwner() const
-{
-	return m_pWndOwner;
+	SetOwner(pWndOwner);
+	if (m_info.IsFloating())
+	{
+		SetParent(nullptr);
+		ModifyStyle(WS_CHILD, WS_POPUP);
+	}
+	else
+	{
+		SetParent(pWndOwner);
+		ModifyStyle(WS_POPUP, WS_CHILD);
+	}
+	pWndOwner->ModifyStyle(0, WS_CLIPCHILDREN);
 }
 
 BOOL CQuickFindWnd::SetScopeItems(const CStringArray& saItems, int nActiveIndex)
@@ -269,8 +317,6 @@ static void _CenterAlignControls(CWnd* pParent, CWnd* arrWnds[], UINT nCount)
 	}
 }
 
-const SIZE g_szDockFloatIcon = {10, 10};
-
 BOOL CQuickFindWnd::OnInitDialog()
 {
 	CQuickFindWndBase::OnInitDialog();
@@ -311,8 +357,6 @@ BOOL CQuickFindWnd::OnInitDialog()
 		::CopyAcceleratorTable(m_hAccel, m_pAccelTable, m_nAccelSize);
 	}
 
-	m_hIconDockFloat = (HICON)LoadImage(hInstance, MAKEINTRESOURCE(ID_QUICKFIND_FLOAT), IMAGE_ICON, g_szDockFloatIcon.cx, g_szDockFloatIcon.cy, LR_SHARED);
-
 	m_wndFindAction.m_bDefaultClick = TRUE;
 	InitFindActionMenu();
 	int nCurFindActionID = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
@@ -322,7 +366,10 @@ BOOL CQuickFindWnd::OnInitDialog()
 	VERIFY(InitButton(m_wndReplaceAll, ID_QUICKFIND_REPLACEALL, hInstance));
 	VERIFY(InitButton(m_wndMatchCase, ID_QUICKFIND_MATCHCASE, hInstance));
 	VERIFY(InitButton(m_wndMatchWord, ID_QUICKFIND_MATCHWORD, hInstance));
-	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX, hInstance));
+	VERIFY(InitButton(m_wndRegEx, ID_QUICKFIND_REGEX, hInstance));	
+	VERIFY(InitButton(m_wndDockFloat, ID_QUICKFIND_FLOAT, hInstance, g_szDockFloatBtnSize));
+	rect.SetRect(1, 1, 1+g_szDockFloatBtnSize, 1+g_szDockFloatBtnSize);
+	m_wndDockFloat.MoveWindow(rect);
 
 	VERIFY(InitCombo(m_wndFind, m_info.saSearch));
 	VERIFY(InitCombo(m_wndReplace, m_info.saReplace));
@@ -479,10 +526,6 @@ void CQuickFindWnd::OnPaint()
 	GetClientRect(rectClient);
 	pDC->FillSolidRect(rectClient, GetSysColor(COLOR_3DFACE));
 
-	CRect rectDockFloat;
-	GetDockFloatRect(rectDockFloat);
-	::DrawIconEx(pDC->GetSafeHdc(), rectDockFloat.left, rectDockFloat.top, m_hIconDockFloat, g_szDockFloatIcon.cx, g_szDockFloatIcon.cy, 0, NULL, DI_NORMAL);
-
 	GetSizeGripperRect(rectGripper);
 	int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
 	rectGripper.bottom -= QuickFindSizeAndFocusIndicatorHeight;
@@ -513,7 +556,48 @@ void CQuickFindWnd::OnPaint()
 
 	rectGripper = rectClient;
 	rectGripper.top = rectGripper.bottom - QuickFindSizeAndFocusIndicatorHeight;
-	pDC->FillSolidRect(rectGripper, m_bActive ? RGB(0,122,204) : RGB(204,206,219));
+	COLORREF crfActiveIndicate;
+	if (m_bActive)
+	{
+		if (m_info.IsFloating())
+			crfActiveIndicate = RGB(34, 177, 76);
+		else if (m_info.IsDocked())
+			crfActiveIndicate = RGB(0, 122, 204);
+		else
+			crfActiveIndicate = RGB(255, 127, 39);
+	}
+	else
+		crfActiveIndicate = RGB(204, 206, 219);
+	pDC->FillSolidRect(rectGripper, crfActiveIndicate);
+
+	if (m_nDockTimerID && m_info.IsDocked())
+	{
+		CPoint ptOld = pDC->GetCurrentPosition();
+		CPen pen(PS_SOLID, 1, RGB(255, 0, 128));
+		auto pOldPen = pDC->SelectObject(&pen);
+		if (m_info.IsDockTop())
+		{
+			pDC->MoveTo(rectClient.left, rectClient.top);
+			pDC->LineTo(rectClient.right, rectClient.top);
+		}
+		if (m_info.IsDockBottom())
+		{
+			pDC->MoveTo(rectClient.left, rectClient.bottom-1);
+			pDC->LineTo(rectClient.right, rectClient.bottom-1);
+		}
+		if (m_info.IsDockLeft())
+		{
+			pDC->MoveTo(rectClient.left, rectClient.top);
+			pDC->LineTo(rectClient.left, rectClient.bottom);
+		}
+		if (m_info.IsDockRight())
+		{
+			pDC->MoveTo(rectClient.right - 1, rectClient.top);
+			pDC->LineTo(rectClient.right - 1, rectClient.bottom);
+		}
+		pDC->SelectObject(pOldPen);
+		pDC->MoveTo(ptOld);
+	}
 }
 
 BOOL CQuickFindWnd::GetMoveGripperRect(CRect& rectGripper) const
@@ -533,16 +617,6 @@ BOOL CQuickFindWnd::GetSizeGripperRect(CRect& rectGripper) const
 	return TRUE;
 }
 
-BOOL CQuickFindWnd::GetDockFloatRect(CRect& rect) const
-{
-	GetClientRect(rect);
-	++rect.left;
-	++rect.top;
-	rect.right = rect.left + g_szDockFloatIcon.cx;
-	rect.bottom = rect.top + g_szDockFloatIcon.cy;
-	return TRUE;
-}
-
 CSize CQuickFindWnd::CalcWindowSizeFromClient(CSize szClient) const
 {
 	szClient.cx += m_szMaxDlgSize.cx - m_szMaxClientSize.cx;
@@ -555,11 +629,7 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
  	CPoint ptHitClient = point;
  	ScreenToClient(&ptHitClient);
 	CRect rect;
-	if (GetDockFloatRect(rect) && rect.PtInRect(ptHitClient))
-	{
-		// Nothing special here
-	}
-	else if ( GetSizeGripperRect(rect) && rect.PtInRect(ptHitClient) )
+	if ( GetSizeGripperRect(rect) && rect.PtInRect(ptHitClient) )
 	{
 		int nGripCY = GetSystemMetrics(SM_CYVSCROLL);
 		if (ptHitClient.y >= rect.bottom - nGripCY)
@@ -737,22 +807,51 @@ void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 	CQuickFindWndBase::OnMoving(nSide, lpRect);
 	if (m_info.IsFloating())
 		return;
+	auto pWndOwner = GetOwner();
+	if (!pWndOwner->GetSafeHwnd())
+		return;
+
+	CRect rectNew = *lpRect;
+	CRect rectOldWnd;
+	GetWindowRect(rectOldWnd);
+	if (rectOldWnd == rectNew)
+		return;
+
+	DWORD dwOldDock = m_info.dwFlags & QUICKFIND_INFO::FlagsDockMask;
+
+	// restrain in owner client
+	CSize szNew = rectNew.Size();
+	CRect rectOwner;
+	pWndOwner->GetClientRect(rectOwner);
+	pWndOwner->ClientToScreen(rectOwner);
+	if (rectNew.left < rectOwner.left)
+	{
+		rectNew.left = rectOwner.left;
+		rectNew.right = rectNew.left + szNew.cx;
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsDockLeft;
+	}
+	if (rectNew.top < rectOwner.top)
+	{
+		rectNew.top = rectOwner.top;
+		rectNew.bottom = rectNew.top + szNew.cy;
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsDockTop;
+	}
+	if (rectNew.right > rectOwner.right)
+	{
+		rectNew.right = rectOwner.right;
+		rectNew.left = rectNew.right - szNew.cx;
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsDockRight;
+	}
+	if (rectNew.bottom > rectOwner.bottom)
+	{
+		rectNew.bottom = rectOwner.bottom;
+		rectNew.top = rectNew.bottom - szNew.cy;
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsDockBottom;
+	}
+	*lpRect = rectNew;
+
 	if (m_info.IsDocked())
 	{
-		auto pWndOwner = GetNotifyOwner();
-		if (!pWndOwner->GetSafeHwnd())
-			return;
-		CRect rectOldWnd;
-		GetWindowRect(rectOldWnd);
-
-		CRect rectNew = *lpRect;
-		if (rectOldWnd == rectNew)
-			return;
-
-		CRect rectOwner;
-		pWndOwner->GetClientRect(rectOwner);
-		pWndOwner->ClientToScreen(rectOwner);
-
 		if (rectNew.left != rectOwner.left)
 			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockLeft;
 		if (rectNew.top != rectOwner.top)
@@ -762,42 +861,17 @@ void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 		if (rectNew.bottom != rectOwner.bottom)
 			m_info.dwFlags &= ~QUICKFIND_INFO::FlagsDockBottom;
 	}
-	else
+	DWORD dwNewDock = m_info.dwFlags & QUICKFIND_INFO::FlagsDockMask;
+	if (dwOldDock != dwNewDock)
 	{
-		// restrain in owner client
-		auto pWndOwner = GetNotifyOwner();
-		if (!pWndOwner->GetSafeHwnd())
-			return;
-		CRect rectNew = *lpRect;
-		CSize szNew = rectNew.Size();
-		CRect rectOwner;
-		pWndOwner->GetClientRect(rectOwner);
-		pWndOwner->ClientToScreen(rectOwner);
-		if (rectNew.left < rectOwner.left)
+		if (dwNewDock)
+			m_nDockTimerID = SetTimer(QFTIMER_ID_DOCK_EVENT, QFTIMER_DOCK_TIMEOUT, nullptr);
+		else if (m_nDockTimerID)
 		{
-			rectNew.left = rectOwner.left;
-			rectNew.right = rectNew.left + szNew.cx;
-			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockLeft;
+			KillTimer(m_nDockTimerID);
+			m_nDockTimerID = 0;
 		}
-		if (rectNew.top < rectOwner.top)
-		{
-			rectNew.top = rectOwner.top;
-			rectNew.bottom = rectNew.top + szNew.cy;
-			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockTop;
-		}
-		if (rectNew.right > rectOwner.right)
-		{
-			rectNew.right = rectOwner.right;
-			rectNew.left = rectNew.right - szNew.cx;
-			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockRight;
-		}
-		if (rectNew.bottom > rectOwner.bottom)
-		{
-			rectNew.bottom = rectOwner.bottom;
-			rectNew.top = rectNew.bottom - szNew.cy;
-			m_info.dwFlags |= QUICKFIND_INFO::FlagsDockBottom;
-		}
-		*lpRect = rectNew;
+		Invalidate();
 	}
 }
 
@@ -812,6 +886,7 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 		auto pParent = GetParent();
 		if (pParent->GetSafeHwnd())
 		{
+			DWORD dwOldDock = m_info.dwFlags & QUICKFIND_INFO::FlagsDockMask;
 			enum {SnapSize = 15};
 			CRect rectOwnerWnd;
 			pParent->GetClientRect(rectOwnerWnd);
@@ -849,6 +924,18 @@ void CQuickFindWnd::OnWindowPosChanging(WINDOWPOS* lpwndpos)
 				lpwndpos->y = rectOwnerWnd.bottom - rect.Height();
 				lpwndpos->cy = rect.Height();
 				m_info.dwFlags |= QUICKFIND_INFO::FlagsDockBottom;
+			}
+			DWORD dwNewDock = m_info.dwFlags & QUICKFIND_INFO::FlagsDockMask;
+			if (dwOldDock != dwNewDock)
+			{
+				if (dwNewDock)
+					m_nDockTimerID = SetTimer(QFTIMER_ID_DOCK_EVENT, QFTIMER_DOCK_TIMEOUT, nullptr);
+				else if (m_nDockTimerID)
+				{
+					KillTimer(m_nDockTimerID);
+					m_nDockTimerID = 0;
+				}
+				Invalidate();
 			}
 		}
 	}
@@ -924,11 +1011,6 @@ void CQuickFindWnd::OnUseRegEx()
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsUseRegEx;
 	else
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsUseRegEx;
-}
-
-void CQuickFindWnd::OnSwitchFloatDock()
-{
-	// TODO
 }
 
 void CQuickFindWnd::OnSelChangeFind()
@@ -1065,7 +1147,7 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 
 LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd, WPARAM wp, LPARAM lp)
 {
-	auto pWndOwner = GetNotifyOwner();
+	auto pWndOwner = GetOwner();
 	if (pWndOwner->GetSafeHwnd())
 	{
 		QNMHDR nmhdr = {this, wp, lp};
@@ -1092,14 +1174,16 @@ void CQuickFindWnd::OnEditReplace()
 	m_wndFind.SetFocus();
 }
 
+void CQuickFindWnd::OnDestroy()
+{
+	KillTimer(m_nDockTimerID);
+	m_nDockTimerID = 0;
+	CQuickFindWndBase::OnDestroy();
+}
+
 void CQuickFindWnd::OnNcDestroy()
 {
 	NotifyOwner(QuickFindCmdTerminating);
-	if (m_hIconDockFloat)
-	{
-		DestroyIcon(m_hIconDockFloat);
-		m_hIconDockFloat = nullptr;
-	}
 	CQuickFindWndBase::OnNcDestroy();
 }
 
@@ -1119,9 +1203,20 @@ void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
 
 void CQuickFindWnd::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	m_bActive = TRUE;
+	m_bActive = nState != WA_INACTIVE;
 	Invalidate();
 	CQuickFindWndBase::OnActivate(nState, pWndOther, bMinimized);
+}
+
+BOOL CQuickFindWnd::OnNcActivate(BOOL bActive)
+{
+	bActive = (GetFocus() == this);
+	if (m_bActive != bActive)
+	{
+		m_bActive = bActive;
+		Invalidate();
+	}
+	return CQuickFindWndBase::OnNcActivate(bActive);
 }
 
 int CQuickFindWnd::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
@@ -1150,5 +1245,18 @@ LRESULT CQuickFindWnd::OnIdleUpdateCmdUI(WPARAM /*wParam*/, LPARAM)
 		}
 	}
 	return 0L;
+}
+
+void CQuickFindWnd::OnTimer(UINT_PTR nIDEvent)
+{
+	switch (nIDEvent)
+	{
+	case QFTIMER_ID_DOCK_EVENT:
+		KillTimer(m_nDockTimerID);
+		m_nDockTimerID = 0;
+		Invalidate();
+		break;
+	}
+	CQuickFindWndBase::OnTimer(nIDEvent);
 }
 

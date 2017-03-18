@@ -44,7 +44,6 @@ public:
 	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
 
 	void SetNotifyOwner(CWnd* pWndOwner);
-	CWnd* GetNotifyOwner() const;
 
 	BOOL SetScopeItems(const CStringArray& saItems, int nActiveIndex = 0);
 
@@ -95,7 +94,7 @@ public:
 
 	void GetReplaceStringArray(CStringArray& sa) const;
 protected:
-	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr) const;
+	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr, int nImgSize = 16) const;
 	
 	BOOL InitCombo(CComboBox& combo, const CStringArray& saText);
 
@@ -109,11 +108,10 @@ protected:
 
 	BOOL GetMoveGripperRect(CRect& rectGripper) const;
 	BOOL GetSizeGripperRect(CRect& rectGripper) const;
-	BOOL GetDockFloatRect(CRect& rect) const;
 
 	CSize CalcWindowSizeFromClient(CSize szClient) const;
 
-	void OnSwitchFloatDock();
+	void SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner);
 private:
 	void InitFindActionMenu();
 
@@ -142,6 +140,13 @@ protected:
 	CMFCButton		m_wndRegEx;
 	CComboBox		m_wndScope;
 
+	class CDockButton : public CMFCButton
+	{
+	public:
+		void OnDrawBorder(CDC* /*pDC*/, CRect& /*rectClient*/, UINT /*uiState*/) override {}
+	};
+	CDockButton		m_wndDockFloat;
+
 	CSize			m_szLastClientSize;
 
 	BOOL			m_bShowReplaceUI;
@@ -164,8 +169,8 @@ protected:
 	QUICKFIND_INFO	m_info;
 
 	BOOL			m_bActive;
-	CWnd*			m_pWndOwner;
-	HICON			m_hIconDockFloat;
+
+	UINT_PTR		m_nDockTimerID;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
@@ -190,14 +195,18 @@ protected:
 	afx_msg void OnFindAll();
 	afx_msg void OnReplaceNext();
 	afx_msg void OnReplaceAll();
+	afx_msg void OnSwitchFloatDock();
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
+	afx_msg void OnDestroy();
 	afx_msg void OnNcDestroy();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	afx_msg void OnKillFocus(CWnd* pNewWnd);
 	afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+	afx_msg BOOL OnNcActivate(BOOL bActive);
 	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 	DECLARE_MESSAGE_MAP()
 };
