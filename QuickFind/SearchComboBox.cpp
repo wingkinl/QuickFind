@@ -148,8 +148,9 @@ HBRUSH CSearchComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	{
 		//COLORREF crfBK = RGB(0xf9, 0xf2, 0xf4);
 		//pDC->SetTextColor(RGB(0xc7,0x25,0x4e));
-		COLORREF crfBK = RGB(0xf2, 0xde, 0xde);
-		pDC->SetTextColor(RGB(0xa9,0x44,0x42));
+		//COLORREF crfBK = RGB(0xf2, 0xde, 0xde);
+		COLORREF crfBK = RGB(0xff, 0xd0, 0xfd);
+		//pDC->SetTextColor(RGB(0xa9,0x44,0x42));
 		pDC->SetBkColor(crfBK);
 		pDC->SetBkMode(TRANSPARENT);
 		if (!m_brErr.GetSafeHandle())

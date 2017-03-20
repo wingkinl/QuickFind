@@ -207,6 +207,7 @@ protected:
 	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 
 	DECLARE_MESSAGE_MAP()
 };

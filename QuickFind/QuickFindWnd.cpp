@@ -85,6 +85,7 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_MOUSEACTIVATE()
 	ON_MESSAGE(WM_IDLEUPDATECMDUI, &OnIdleUpdateCmdUI)
 	ON_WM_TIMER()
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 
@@ -647,10 +648,7 @@ LRESULT CQuickFindWnd::OnNcHitTest(CPoint point)
 		if (ptHitClient.y >= rcClient.bottom - 5)
 			return HTBOTTOM;
 	}
-	LRESULT nHit = CQuickFindWndBase::OnNcHitTest(point);
-	if (nHit == HTCLIENT)
-		return HTCAPTION;
-	return nHit;
+	return CQuickFindWndBase::OnNcHitTest(point);
 }
 
 BOOL CQuickFindWnd::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
@@ -750,13 +748,9 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 {
 	CQuickFindWndBase::OnSize(nType, cx, cy);
 
+	m_bActive = TRUE;
 	CRect rect;
 	Invalidate();
-	//if (GetSizeGripperRect(rect))
-	//	InvalidateRect(rect);
-
-	//if (GetMoveGripperRect(rect))
-	//	InvalidateRect(rect);
 
 	if (!m_wndFind.GetSafeHwnd())
 		return;
@@ -805,6 +799,11 @@ void CQuickFindWnd::OnSize(UINT nType, int cx, int cy)
 void CQuickFindWnd::OnMoving(UINT nSide, LPRECT lpRect)
 {
 	CQuickFindWndBase::OnMoving(nSide, lpRect);
+	if (!m_bActive)
+	{
+		m_bActive = TRUE;
+		Invalidate();
+	}
 	if (m_info.IsFloating())
 		return;
 	auto pWndOwner = GetOwner();
@@ -1189,44 +1188,26 @@ void CQuickFindWnd::OnNcDestroy()
 
 void CQuickFindWnd::OnSetFocus(CWnd* pOldWnd)
 {
-	m_bActive = TRUE;
-	Invalidate();
 	CQuickFindWndBase::OnSetFocus(pOldWnd);
 }
 
 void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
 {
-	m_bActive = FALSE;
-	Invalidate();
 	CQuickFindWndBase::OnKillFocus(pNewWnd);
 }
 
 void CQuickFindWnd::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	m_bActive = nState != WA_INACTIVE;
-	Invalidate();
 	CQuickFindWndBase::OnActivate(nState, pWndOther, bMinimized);
 }
 
 BOOL CQuickFindWnd::OnNcActivate(BOOL bActive)
 {
-	bActive = (GetFocus() == this);
-	if (m_bActive != bActive)
-	{
-		m_bActive = bActive;
-		Invalidate();
-	}
 	return CQuickFindWndBase::OnNcActivate(bActive);
 }
 
 int CQuickFindWnd::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
 {
-	CWnd* pFocus = GetFocus();
-	BOOL bActive = pFocus->GetSafeHwnd() != NULL && (IsChild(pFocus) || pFocus->GetSafeHwnd() == GetSafeHwnd());
-	if (!bActive)
-		SetFocus();
-	m_bActive = TRUE;
-	Invalidate();
 	return CQuickFindWndBase::OnMouseActivate(pDesktopWnd, nHitTest, message);
 }
 
@@ -1260,3 +1241,8 @@ void CQuickFindWnd::OnTimer(UINT_PTR nIDEvent)
 	CQuickFindWndBase::OnTimer(nIDEvent);
 }
 
+void CQuickFindWnd::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	SetFocus();
+	CQuickFindWndBase::OnLButtonDown(nFlags, point);
+}
