@@ -53,7 +53,8 @@ public:
 	BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd);
 	BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd);
 protected:
-
+	void CheckCloseOwnedFindWindow();
+	BOOL PreTranslateMessage(MSG* pMsg) override;
 // Generated message map functions
 protected:
 	afx_msg void OnDestroy();
@@ -64,6 +65,7 @@ protected:
 	afx_msg void OnEditReplace();
 	afx_msg LRESULT OnQuickFindCmd(WPARAM wp, LPARAM lp);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
 
 	DECLARE_MESSAGE_MAP()
 };

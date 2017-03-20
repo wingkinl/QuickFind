@@ -58,6 +58,7 @@ BEGIN_MESSAGE_MAP(CQuickFindView, CRichEditView)
 	ON_COMMAND(ID_EDIT_REPLACE, &CQuickFindView::OnEditReplace)
 	ON_REGISTERED_MESSAGE(_QUICKFINDMSG, &CQuickFindView::OnQuickFindCmd)
 	ON_WM_SIZE()
+	ON_MESSAGE(WM_IDLEUPDATECMDUI, &OnIdleUpdateCmdUI)
 END_MESSAGE_MAP()
 
 // CQuickFindView construction/destruction
@@ -91,6 +92,28 @@ void CQuickFindView::OnInitialUpdate()
 	SetMargins(CRect(720, 720, 720, 720));
 }
 
+void CQuickFindView::CheckCloseOwnedFindWindow()
+{
+	if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()) && _quickfindState.pQuickFindWnd->GetOwner() == this)
+	{
+		_quickfindState.pQuickFindWnd->SendMessage(WM_CLOSE);
+		_quickfindState.pQuickFindWnd->SetOwner(nullptr);
+		_quickfindState.pQuickFindWnd = nullptr;
+	}
+}
+
+BOOL CQuickFindView::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_ESCAPE)
+		{
+			CheckCloseOwnedFindWindow();
+		}
+	}
+	return __super::PreTranslateMessage(pMsg);
+}
+
 void CQuickFindView::OnDestroy()
 {
 	// Deactivate the item on destruction; this is important
@@ -101,12 +124,7 @@ void CQuickFindView::OnDestroy()
       pActiveItem->Deactivate();
       ASSERT(GetDocument()->GetInPlaceActiveItem(this) == NULL);
    }
-   if (::IsWindow(_quickfindState.pQuickFindWnd->GetSafeHwnd()) && _quickfindState.pQuickFindWnd->GetOwner() == this)
-   {
-	   _quickfindState.pQuickFindWnd->SendMessage(WM_CLOSE);
-	   _quickfindState.pQuickFindWnd->SetOwner(nullptr);
-	   _quickfindState.pQuickFindWnd = nullptr;
-   }
+   CheckCloseOwnedFindWindow();
    CRichEditView::OnDestroy();
 }
 
@@ -232,6 +250,9 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 
 	CWaitCursor wait;
 
+	SetRedraw(FALSE);
+	int nOldFirstVisibleLine = GetRichEditCtrl().GetFirstVisibleLine();
+
 	FINDTEXTEX ft;
 	GetRichEditCtrl().GetSel(ft.chrg);
 	long lInitialCursorPosition = ft.chrg.cpMin;
@@ -270,6 +291,16 @@ BOOL CQuickFindView::OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd)
 
 	GetRichEditCtrl().SetSel(lInitialCursorPosition, lInitialCursorPosition);
 	GetRichEditCtrl().HideSelection(FALSE, FALSE);
+
+	// Prevent the auto-scroll of the control when calling SetSel()
+	int nNewFirstVisibleLine = GetRichEditCtrl().GetFirstVisibleLine();
+
+	if (nOldFirstVisibleLine != nNewFirstVisibleLine)
+		GetRichEditCtrl().LineScroll(nOldFirstVisibleLine - nNewFirstVisibleLine);
+
+	SetRedraw(TRUE);
+
+	RedrawWindow();
 	return bFound;
 }
 
@@ -328,5 +359,12 @@ void CQuickFindView::OnSize(UINT nType, int cx, int cy)
 	__super::OnSize(nType, cx, cy);
 	if (_quickfindState.pQuickFindWnd)
 		_quickfindState.pQuickFindWnd->UpdateWindowPos();
+}
+
+LRESULT CQuickFindView::OnIdleUpdateCmdUI(WPARAM, LPARAM)
+{
+	if (_quickfindState.pQuickFindWnd)
+		_quickfindState.pQuickFindWnd->SendMessage(WM_IDLEUPDATECMDUI);
+	return 0;
 }
 
