@@ -327,7 +327,7 @@ void CQuickFindWnd::InitFindActionMenu()
 	}
 
 	m_wndFindAction.m_hMenu = m_menuFindAction.GetSafeHmenu();
-	m_wndFindAction.m_bOSMenu = FALSE;
+	//m_wndFindAction.m_bOSMenu = FALSE;
 }
 
 static void _CenterAlignControls(CWnd* pParent, CWnd* arrWnds[], UINT nCount)
