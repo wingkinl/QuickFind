@@ -112,6 +112,8 @@ protected:
 	CSize CalcWindowSizeFromClient(CSize szClient) const;
 
 	void SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner);
+
+	virtual void OnUpdateActiveStatus();
 private:
 	void InitFindActionMenu();
 
@@ -200,11 +202,6 @@ protected:
 	afx_msg void OnEditReplace();
 	afx_msg void OnDestroy();
 	afx_msg void OnNcDestroy();
-	afx_msg void OnSetFocus(CWnd* pOldWnd);
-	afx_msg void OnKillFocus(CWnd* pNewWnd);
-	afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-	afx_msg BOOL OnNcActivate(BOOL bActive);
-	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);

@@ -106,11 +106,6 @@ BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_COMMAND(ID_EDIT_FIND, &OnEditFind)
 	ON_COMMAND(ID_EDIT_REPLACE, &OnEditReplace)
 	ON_COMMAND(ID_QUICKFIND_FLOAT, &OnSwitchFloatDock)
-	ON_WM_SETFOCUS()
-	ON_WM_KILLFOCUS()
-	ON_WM_NCACTIVATE()
-	ON_WM_ACTIVATE()
-	ON_WM_MOUSEACTIVATE()
 	ON_MESSAGE(WM_IDLEUPDATECMDUI, &OnIdleUpdateCmdUI)
 	ON_WM_TIMER()
 	ON_WM_LBUTTONDOWN()
@@ -1244,31 +1239,6 @@ void CQuickFindWnd::OnNcDestroy()
 	CQuickFindWndBase::OnNcDestroy();
 }
 
-void CQuickFindWnd::OnSetFocus(CWnd* pOldWnd)
-{
-	CQuickFindWndBase::OnSetFocus(pOldWnd);
-}
-
-void CQuickFindWnd::OnKillFocus(CWnd* pNewWnd)
-{
-	CQuickFindWndBase::OnKillFocus(pNewWnd);
-}
-
-void CQuickFindWnd::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
-{
-	CQuickFindWndBase::OnActivate(nState, pWndOther, bMinimized);
-}
-
-BOOL CQuickFindWnd::OnNcActivate(BOOL bActive)
-{
-	return CQuickFindWndBase::OnNcActivate(bActive);
-}
-
-int CQuickFindWnd::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
-{
-	return CQuickFindWndBase::OnMouseActivate(pDesktopWnd, nHitTest, message);
-}
-
 LRESULT CQuickFindWnd::OnIdleUpdateCmdUI(WPARAM /*wParam*/, LPARAM)
 {
 	if ((GetStyle() & WS_VISIBLE))
@@ -1280,10 +1250,15 @@ LRESULT CQuickFindWnd::OnIdleUpdateCmdUI(WPARAM /*wParam*/, LPARAM)
 
 		if (m_bActive != bActiveOld)
 		{
-			Invalidate();
+			OnUpdateActiveStatus();
 		}
 	}
 	return 0L;
+}
+
+void CQuickFindWnd::OnUpdateActiveStatus()
+{
+	Invalidate();
 }
 
 void CQuickFindWnd::OnTimer(UINT_PTR nIDEvent)
