@@ -1,3 +1,31 @@
+/*
+MIT License
+
+Copyright(c) 2017 wingkinl (Kenny Lau)
+
+https://github.com/wingkinl/QuickFind
+
+History: 3/21/2017 Initial version
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files(the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 // QuickFindWnd.cpp : implementation file
 //
 
@@ -238,6 +266,14 @@ void CQuickFindWnd::SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner)
 	}
 }
 
+// Setting owner as the parent window has many problems, some edit controls
+// (RichEdit, Scintilla) are not designed to work with child window properly:
+// 1, RichEdit scrolls this window along with its text
+// 2, Scintilla causes flashing/flickering of the caret in find edit control
+// 3, Context menu shows on this control
+// To work around this, create this window as a sibling window instead of a
+// a child.
+
 void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 {
 	ASSERT_VALID(pWndOwner);
@@ -245,15 +281,19 @@ void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 	if (m_info.IsFloating())
 	{
 		// SetParent below will hide this window, so check this style first
-		// to avoid flickering
+		// to avoid flickering, no need to do this if already a popup
 		if (GetStyle() & WS_CHILD)
 			SetParent(nullptr);
 		ModifyStyle(WS_CHILD, WS_POPUP);
 	}
 	else
 	{
-		CWnd* pWndParent = pWndOwner->GetParent();
 		pWndOwner->ModifyStyle(0, WS_CLIPCHILDREN);
+	#ifdef _QF_USE_OWNER_AS_PARENT
+		CWnd* pWndParent = pWndOwner;
+	#else
+		CWnd* pWndParent = pWndOwner->GetParent();
+	#endif // _QF_USE_OWNER_AS_PARENT
 		SetParent(pWndParent);
 		ModifyStyle(WS_POPUP, WS_CHILD);
 	}
