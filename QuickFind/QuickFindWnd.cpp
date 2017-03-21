@@ -1020,9 +1020,11 @@ BOOL CQuickFindWnd::PreTranslateMessage(MSG* pMsg)
 void CQuickFindWnd::OnButtonFindAction()
 {
 	BOOL bChangeButton = FALSE;
-	switch (m_wndFindAction.m_nMenuResult)
+	int nCmd = m_wndFindAction.m_nMenuResult;
+	if (!nCmd)
+		nCmd = m_info.IsFindReplaceNext() ? ID_QUICKFIND_NEXT : ID_QUICKFIND_PREVIOUS;
+	switch (nCmd)
 	{
-	default:
 	case ID_QUICKFIND_NEXT:
 		bChangeButton = m_info.IsFindReplacePrevious();
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
