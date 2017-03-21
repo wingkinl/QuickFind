@@ -1136,7 +1136,10 @@ static void _PromoteCurTextInComboList(CComboBox& combo, UINT nMaxCount)
 
 void CQuickFindWnd::SetFindString(LPCTSTR pszText)
 {
-	_PromoteTextInComboEx(m_wndFind, pszText, m_info.nMaxItems);
+	if (pszText && *pszText)
+		_PromoteTextInComboEx(m_wndFind, pszText, m_info.nMaxItems);
+	else
+		m_wndFind.SetWindowText(_T(""));
 	OnSelChangeFind();
 }
 
