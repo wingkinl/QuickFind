@@ -199,6 +199,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	if (_quickfindState.pQuickFindWnd)
 	{
 		_quickfindState.pQuickFindWnd->SetNotifyOwner(this);
+		_quickfindState.pQuickFindWnd->m_bCanShowReplaceUI = (GetRichEditCtrl().GetStyle() & ES_READONLY) == 0;
 		_quickfindState.pQuickFindWnd->SendMessage(WM_COMMAND, bFind ? ID_EDIT_FIND : ID_EDIT_REPLACE);
 		_quickfindState.pQuickFindWnd->SetFindString(strFind);
 		_quickfindState.pQuickFindWnd->SetActiveShowWindow();
@@ -206,6 +207,7 @@ void CQuickFindView::OnEditFindReplace(BOOL bFind)
 	}	
 	_quickfindState.pQuickFindWnd = CreateFindReplaceWindow();
 	ASSERT(_quickfindState.pQuickFindWnd);
+	_quickfindState.pQuickFindWnd->m_bCanShowReplaceUI = (GetRichEditCtrl().GetStyle() & ES_READONLY) == 0;
 	if (!_quickfindState.pQuickFindWnd->Create(_quickfindState.info, this))
 	{
 		_quickfindState.pQuickFindWnd = nullptr;

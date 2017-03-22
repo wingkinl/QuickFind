@@ -43,6 +43,8 @@ public:
 		LPARAM			lParam;
 	};
 
+	BOOL		m_bCanShowReplaceUI;
+
 	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
 
 	void SetNotifyOwner(CWnd* pWndOwner);
@@ -128,6 +130,9 @@ protected:
 
 	void PromoteFindTextItems();
 	void PromoteReplaceTextItems();
+
+	BOOL IsShowReplaceUI() const;
+	BOOL IsShowOptionsUI() const;
 protected:
 	CSearchComboBox	m_wndFind;
 	

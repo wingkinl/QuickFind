@@ -44,6 +44,7 @@ IMPLEMENT_DYNAMIC(CQuickFindWnd, CQuickFindWndBase)
 CQuickFindWnd::CQuickFindWnd()
 	: CQuickFindWndBase(IDD_QUICK_FIND_REPLACE)
 {
+	m_bCanShowReplaceUI = TRUE;
 	m_szLastClientSize.SetSize(0, 0);
 	m_bShowReplaceUI = FALSE;
 	m_bShowOptionsUI = TRUE;
@@ -743,14 +744,11 @@ void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 	{
 		if (rect.bottom >= m_arrUIRows[nRow].bottom)
 		{
-			int nNewClientHeight = m_arrUIRows[nRow].bottom + m_arrUIRows[0].top + 1;
-			pRect->bottom = pRect->top + CalcWindowSizeFromClient(CSize(0, nNewClientHeight)).cy;
-			BOOL bShowReplaceUI = m_bShowReplaceUI;
-			BOOL bShowOptionsUI = m_bShowOptionsUI;
+			BOOL bShowReplaceUI = FALSE;
+			BOOL bShowOptionsUI = FALSE;
 			switch (nRow)
 			{
 			case 0:
-				bShowReplaceUI = bShowOptionsUI = FALSE;
 				break;
 			case 1:
 				bShowReplaceUI = m_info.IsInitShowAsReplace();
@@ -760,7 +758,12 @@ void CQuickFindWnd::OnSizing(UINT fwSide, LPRECT pRect)
 				bShowReplaceUI = bShowOptionsUI = TRUE;
 				break;
 			}
-			if (bShowReplaceUI ^ m_bShowReplaceUI || bShowOptionsUI ^ m_bShowOptionsUI )
+			bShowReplaceUI = bShowReplaceUI && m_bCanShowReplaceUI;
+			nRow = (bShowReplaceUI ? 1 : 0) + (bShowOptionsUI ? 1 : 0);
+			int nNewClientHeight = m_arrUIRows[nRow].bottom + m_arrUIRows[0].top + 1;
+			pRect->bottom = pRect->top + CalcWindowSizeFromClient(CSize(0, nNewClientHeight)).cy;
+
+			if (bShowReplaceUI ^ IsShowReplaceUI() || bShowOptionsUI ^ IsShowOptionsUI())
 			{
 				SwitchUI(bShowReplaceUI, bShowOptionsUI);
 			}
@@ -786,7 +789,7 @@ void CQuickFindWnd::ShowOptionsUI(BOOL bShow)
 		CRect rect;
 		m_wndScope.GetWindowRect(rect);
 		ScreenToClient(rect);
-		rect.top = m_bShowReplaceUI ? m_arrUIRows[2].top : m_arrUIRows[1].top;
+		rect.top = IsShowReplaceUI() ? m_arrUIRows[2].top : m_arrUIRows[1].top;
 		m_wndScope.SetWindowPos(nullptr, rect.left, rect.top, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
 		_CenterAlignControls(this, arrWnds, _countof(arrWnds));
 	}
@@ -1140,7 +1143,6 @@ void CQuickFindWnd::SetFindString(LPCTSTR pszText)
 		_PromoteTextInComboEx(m_wndFind, pszText, m_info.nMaxItems);
 	else
 		m_wndFind.SetWindowText(_T(""));
-	OnSelChangeFind();
 }
 
 void CQuickFindWnd::PromoteFindTextItems()
@@ -1151,6 +1153,16 @@ void CQuickFindWnd::PromoteFindTextItems()
 void CQuickFindWnd::PromoteReplaceTextItems()
 {
 	_PromoteCurTextInComboList(m_wndReplace, m_info.nMaxItems);
+}
+
+BOOL CQuickFindWnd::IsShowReplaceUI() const
+{
+	return m_bCanShowReplaceUI && m_bShowReplaceUI;
+}
+
+BOOL CQuickFindWnd::IsShowOptionsUI() const
+{
+	return m_bShowOptionsUI;
 }
 
 void CQuickFindWnd::OnFindNext()
@@ -1193,12 +1205,12 @@ void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
 	CRect rectDlg;
 	GetWindowRect(rectDlg);
 	CSize szDlg = rectDlg.Size();
-	int nRows = (m_bShowOptionsUI ? 1 : 0) + (m_bShowReplaceUI ? 1 : 0);
+	int nRows = (IsShowOptionsUI() ? 1 : 0) + (IsShowReplaceUI() ? 1 : 0);
 	LONG nNewClientHeight = m_arrUIRows[nRows].bottom + m_arrUIRows[0].top + 1;
 	szDlg.cy = CalcWindowSizeFromClient(CSize(0, nNewClientHeight)).cy;
 
-	ShowReplaceUI(m_bShowReplaceUI);
-	ShowOptionsUI(m_bShowOptionsUI);
+	ShowReplaceUI(IsShowReplaceUI());
+	ShowOptionsUI(IsShowOptionsUI());
 	SetWindowPos(nullptr, -1, -1, szDlg.cx, szDlg.cy, SWP_NOMOVE | SWP_NOZORDER);
 }
 
@@ -1215,8 +1227,6 @@ LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd, WPARAM wp, LPARAM lp)
 
 void CQuickFindWnd::OnEditFind()
 {
-	if (!m_info.IsInitShowAsReplace() && m_bShowOptionsUI)
-		return;
 	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsInitShowReplace;
 	SwitchUI(FALSE, TRUE);
 	m_wndFind.SetFocus();
@@ -1224,8 +1234,6 @@ void CQuickFindWnd::OnEditFind()
 
 void CQuickFindWnd::OnEditReplace()
 {
-	if (m_info.IsInitShowAsReplace() && m_bShowOptionsUI)
-		return;
 	m_info.dwFlags |= QUICKFIND_INFO::FlagsInitShowReplace;
 	SwitchUI(TRUE, TRUE);
 	m_wndFind.SetFocus();
