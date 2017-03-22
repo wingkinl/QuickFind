@@ -14,6 +14,8 @@ enum QuickFindCmd
 	QuickFindCmdScopeSelChange	= 5,
 
 	QuickFindCmdTerminating		= 10,
+
+	QuickFindCmdCustom			= 1024,
 };
 #define QUICKFINDMSGSTRING  _T("QuickFindReplace")
 
@@ -114,7 +116,7 @@ protected:
 	void SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner);
 
 	virtual void OnUpdateActiveStatus();
-private:
+
 	void InitFindActionMenu();
 
 	void ShowReplaceUI(BOOL bShow);
