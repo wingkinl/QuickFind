@@ -1171,14 +1171,22 @@ BOOL CQuickFindWnd::IsShowOptionsUI() const
 void CQuickFindWnd::OnFindNext()
 {
 	PromoteFindTextItems();
+	BOOL bWasFindPrevious = m_info.IsFindReplacePrevious();
+	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
 	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	if (bWasFindPrevious)
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
 	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnFindPrevious()
 {
 	PromoteFindTextItems();
+	BOOL bWasFindNext = m_info.IsFindReplaceNext();
+	m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
 	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	if (bWasFindNext)
+		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
 	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
