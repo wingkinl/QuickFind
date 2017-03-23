@@ -276,22 +276,22 @@ void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 	SetOwner(pWndOwner);
 	if (m_info.IsFloating())
 	{
+		ModifyStyle(WS_CHILD, WS_POPUP);
 		// SetParent below will hide this window, so check this style first
 		// to avoid flickering, no need to do this if already a popup
 		if (GetStyle() & WS_CHILD)
 			SetParent(nullptr);
-		ModifyStyle(WS_CHILD, WS_POPUP);
 	}
 	else
 	{
-		pWndOwner->ModifyStyle(0, WS_CLIPCHILDREN);
+		ModifyStyle(WS_POPUP, WS_CHILD);
 	#ifdef _QF_USE_OWNER_AS_PARENT
 		CWnd* pWndParent = pWndOwner;
 	#else
 		CWnd* pWndParent = pWndOwner->GetParent();
 	#endif // _QF_USE_OWNER_AS_PARENT
+		pWndParent->ModifyStyle(0, WS_CLIPCHILDREN);
 		SetParent(pWndParent);
-		ModifyStyle(WS_POPUP, WS_CHILD);
 	}
 	pWndOwner->ModifyStyle(0, WS_CLIPSIBLINGS);
 }
@@ -447,6 +447,9 @@ CString CQuickFindWnd::GetReplaceString() const
 
 void CQuickFindWnd::SetActiveShowWindow()
 {
+	m_wndMatchCase.SetCheck(IsMatchCase());
+	m_wndMatchWord.SetCheck(IsMatchWholeWord());
+	m_wndRegEx.SetCheck(IsUseRegEx());
 	SetActiveWindow();
 	UpdateWindowPos();
 	m_wndFind.SetFocus();

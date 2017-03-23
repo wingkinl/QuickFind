@@ -47,7 +47,7 @@ public:
 
 	virtual BOOL Create(const QUICKFIND_INFO& info, CWnd* pParentWnd);
 
-	void SetNotifyOwner(CWnd* pWndOwner);
+	virtual void SetNotifyOwner(CWnd* pWndOwner);
 
 	BOOL SetScopeItems(const CStringArray& saItems, int nActiveIndex = 0);
 
@@ -59,10 +59,10 @@ public:
 
 	void SetFindString(LPCTSTR pszText);
 
-	void SetActiveShowWindow();
+	virtual void SetActiveShowWindow();
 
 	// called when owner window's size has been changed
-	void UpdateWindowPos();
+	virtual void UpdateWindowPos();
 
 	inline DWORD GetFlags() const
 	{
