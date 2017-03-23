@@ -22,7 +22,7 @@ public:
 	DWORD			dwFlags;
 	CStringArray	saSearch;
 	CStringArray	saReplace;
-	UINT			nMaxItems;
+	INT_PTR			nMaxItems;
 
 	QUICKFIND_INFO()
 	{

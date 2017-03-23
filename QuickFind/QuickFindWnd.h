@@ -98,7 +98,7 @@ public:
 
 	void GetReplaceStringArray(CStringArray& sa) const;
 protected:
-	BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr, int nImgSize = 16) const;
+	virtual BOOL InitButton(CMFCButton& btn, UINT nID, HINSTANCE hResInst = nullptr, int nImgSize = 16) const;
 	
 	BOOL InitCombo(CComboBox& combo, const CStringArray& saText);
 
