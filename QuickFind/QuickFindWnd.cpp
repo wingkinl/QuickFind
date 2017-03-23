@@ -558,12 +558,12 @@ static void _GetComboStringArray(const CComboBox& combo, CStringArray& sa, int n
 
 void CQuickFindWnd::GetFindStringArray(CStringArray& sa) const
 {
-	_GetComboStringArray(m_wndFind, sa, m_info.nMaxItems);
+	_GetComboStringArray(m_wndFind, sa, (int)m_info.nMaxItems);
 }
 
 void CQuickFindWnd::GetReplaceStringArray(CStringArray& sa) const
 {
-	_GetComboStringArray(m_wndReplace, sa, m_info.nMaxItems);
+	_GetComboStringArray(m_wndReplace, sa, (int)m_info.nMaxItems);
 }
 
 BOOL CQuickFindWnd::OnEraseBkgnd(CDC* /*pDC*/)
@@ -1093,14 +1093,14 @@ void CQuickFindWnd::OnSelChangeScope()
 	NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel());
 }
 
-static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, UINT nMaxCount)
+static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, int nMaxCount)
 {
 	ASSERT(combo.m_hWnd);
 	int nIndex = combo.FindStringExact(-1, pszText);
 	if (nIndex < 0)
 	{
 		combo.InsertString(0, pszText);
-		if ((UINT)combo.GetCount() > nMaxCount)
+		if (combo.GetCount() > nMaxCount)
 		{
 			combo.DeleteString(combo.GetCount() - 1);
 		}
@@ -1113,7 +1113,7 @@ static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, UINT nMaxCo
 	combo.SetCurSel(0);
 }
 
-static void _PromoteCurTextInComboList(CComboBox& combo, UINT nMaxCount)
+static void _PromoteCurTextInComboList(CComboBox& combo, int nMaxCount)
 {
 	// they have to be in sync!
 	int nCurSel = combo.GetCurSel();
@@ -1140,19 +1140,19 @@ static void _PromoteCurTextInComboList(CComboBox& combo, UINT nMaxCount)
 void CQuickFindWnd::SetFindString(LPCTSTR pszText)
 {
 	if (pszText && *pszText)
-		_PromoteTextInComboEx(m_wndFind, pszText, m_info.nMaxItems);
+		_PromoteTextInComboEx(m_wndFind, pszText, (int)m_info.nMaxItems);
 	else
 		m_wndFind.SetWindowText(_T(""));
 }
 
 void CQuickFindWnd::PromoteFindTextItems()
 {
-	_PromoteCurTextInComboList(m_wndFind, m_info.nMaxItems);
+	_PromoteCurTextInComboList(m_wndFind, (int)m_info.nMaxItems);
 }
 
 void CQuickFindWnd::PromoteReplaceTextItems()
 {
-	_PromoteCurTextInComboList(m_wndReplace, m_info.nMaxItems);
+	_PromoteCurTextInComboList(m_wndReplace, (int)m_info.nMaxItems);
 }
 
 BOOL CQuickFindWnd::IsShowReplaceUI() const
