@@ -208,7 +208,6 @@ protected:
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
 	afx_msg void OnDestroy();
-	afx_msg void OnNcDestroy();
 	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);

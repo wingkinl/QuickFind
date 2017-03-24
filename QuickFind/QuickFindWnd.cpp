@@ -82,7 +82,6 @@ static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindWnd, CQuickFindWndBase)
 	ON_WM_DESTROY()
-	ON_WM_NCDESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_PAINT()
 	ON_WM_NCHITTEST()
@@ -276,15 +275,14 @@ void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 	SetOwner(pWndOwner);
 	if (m_info.IsFloating())
 	{
-		ModifyStyle(WS_CHILD, WS_POPUP);
 		// SetParent below will hide this window, so check this style first
 		// to avoid flickering, no need to do this if already a popup
 		if (GetStyle() & WS_CHILD)
 			SetParent(nullptr);
+		ModifyStyle(WS_CHILD, WS_POPUP);
 	}
 	else
 	{
-		ModifyStyle(WS_POPUP, WS_CHILD);
 	#ifdef _QF_USE_OWNER_AS_PARENT
 		CWnd* pWndParent = pWndOwner;
 	#else
@@ -292,6 +290,7 @@ void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 	#endif // _QF_USE_OWNER_AS_PARENT
 		pWndParent->ModifyStyle(0, WS_CLIPCHILDREN);
 		SetParent(pWndParent);
+		ModifyStyle(WS_POPUP, WS_CHILD);
 	}
 	pWndOwner->ModifyStyle(0, WS_CLIPSIBLINGS);
 }
@@ -1254,13 +1253,8 @@ void CQuickFindWnd::OnDestroy()
 {
 	KillTimer(m_nDockTimerID);
 	m_nDockTimerID = 0;
-	CQuickFindWndBase::OnDestroy();
-}
-
-void CQuickFindWnd::OnNcDestroy()
-{
 	NotifyOwner(QuickFindCmdTerminating);
-	CQuickFindWndBase::OnNcDestroy();
+	CQuickFindWndBase::OnDestroy();
 }
 
 LRESULT CQuickFindWnd::OnIdleUpdateCmdUI(WPARAM /*wParam*/, LPARAM)
