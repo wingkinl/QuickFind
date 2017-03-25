@@ -350,6 +350,8 @@ LRESULT CQuickFindView::OnQuickFindCmd(WPARAM wp, LPARAM lp)
 		return (LRESULT)OnReplaceAll(pQuickFindWnd);
 	case QuickFindCmdFindTextChange:
 		return (LRESULT)OnHighlightFind(pQuickFindWnd);
+	case QuickFindCmdOptionsChange:
+		return (LRESULT)OnFind(pQuickFindWnd);
 	default:
 		break;
 	}

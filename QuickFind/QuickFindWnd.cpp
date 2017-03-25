@@ -1041,6 +1041,7 @@ void CQuickFindWnd::OnButtonFindAction()
 		OnFindPrevious();
 		break;
 	case ID_QUICKFIND_ALL:
+		m_wndFindAction.m_nMenuResult = 0;
 		OnFindAll();
 		break;
 	}
@@ -1054,6 +1055,7 @@ void CQuickFindWnd::OnMatchCase()
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchCase;
 	else
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchCase;
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
 void CQuickFindWnd::OnMatchWord()
@@ -1062,6 +1064,7 @@ void CQuickFindWnd::OnMatchWord()
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchWord;
 	else
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchWord;
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
 void CQuickFindWnd::OnUseRegEx()
@@ -1070,14 +1073,14 @@ void CQuickFindWnd::OnUseRegEx()
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsUseRegEx;
 	else
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsUseRegEx;
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
 void CQuickFindWnd::OnSelChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
 	{
-		m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindTextChange);
-		m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+		UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindTextChange));
 	}
 }
 
@@ -1085,20 +1088,31 @@ void CQuickFindWnd::OnEditChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
 	{
-		m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindTextChange);
-		m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+		UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindTextChange));
 	}
 }
 
 void CQuickFindWnd::OnSelChangeScope()
 {
-	NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel());
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel()));
 }
 
 static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, int nMaxCount)
 {
 	ASSERT(combo.m_hWnd);
-	int nIndex = combo.FindStringExact(-1, pszText);
+	// FindStringExact is not case sensitive
+	//int nIndex = combo.FindStringExact(-1, pszText);
+	int nIndex = -1, nCount = combo.GetCount();
+	for (int ii = 0; ii < nCount; ii++)
+	{
+		CString strTemp;
+		combo.GetLBText(ii, strTemp);
+		if (!strTemp.Compare(pszText))
+		{
+			nIndex = ii;
+			break;
+		}
+	}
 	if (nIndex < 0)
 	{
 		combo.InsertString(0, pszText);
@@ -1172,10 +1186,9 @@ void CQuickFindWnd::OnFindNext()
 	PromoteFindTextItems();
 	BOOL bWasFindPrevious = m_info.IsFindReplacePrevious();
 	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
-	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFind));
 	if (bWasFindPrevious)
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
-	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnFindPrevious()
@@ -1183,29 +1196,27 @@ void CQuickFindWnd::OnFindPrevious()
 	PromoteFindTextItems();
 	BOOL bWasFindNext = m_info.IsFindReplaceNext();
 	m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
-	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFind);
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFind));
 	if (bWasFindNext)
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
-	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnFindAll()
 {
 	PromoteFindTextItems();
-	m_wndFind.m_bSearchOK = (BOOL)NotifyOwner(QuickFindCmdFindAll);
-	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindAll));
 }
 
 void CQuickFindWnd::OnReplaceNext()
 {
 	PromoteReplaceTextItems();
-	NotifyOwner(QuickFindCmdReplace);
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdReplace));
 }
 
 void CQuickFindWnd::OnReplaceAll()
 {
 	PromoteReplaceTextItems();
-	NotifyOwner(QuickFindCmdReplaceAll);
+	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdReplaceAll));
 }
 
 void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
@@ -1233,6 +1244,12 @@ LRESULT CQuickFindWnd::NotifyOwner(QuickFindCmd cmd, WPARAM wp, LPARAM lp)
 		return pWndOwner->SendMessage(_QUICKFINDMSG, (WPARAM)cmd, (LPARAM)&nmhdr);
 	}
 	return 0;
+}
+
+void CQuickFindWnd::UpdateFindResult(BOOL bFindOK)
+{
+	m_wndFind.m_bSearchOK = bFindOK;
+	m_wndFind.RedrawWindow(NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 }
 
 void CQuickFindWnd::OnEditFind()

@@ -12,6 +12,7 @@ enum QuickFindCmd
 	QuickFindCmdReplaceAll		= 3,
 	QuickFindCmdFindTextChange	= 4,
 	QuickFindCmdScopeSelChange	= 5,
+	QuickFindCmdOptionsChange	= 6,
 
 	QuickFindCmdTerminating		= 10,
 
@@ -127,6 +128,7 @@ protected:
 	void SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions);
 
 	LRESULT NotifyOwner(QuickFindCmd cmd, WPARAM wp = 0, LPARAM lp = 0);
+	void UpdateFindResult(BOOL bFindOK);
 
 	void PromoteFindTextItems();
 	void PromoteReplaceTextItems();
@@ -144,9 +146,28 @@ protected:
 	CMFCButton		m_wndReplaceNext;
 	CMFCButton		m_wndReplaceAll;
 
-	CMFCButton		m_wndMatchCase;
-	CMFCButton		m_wndMatchWord;
-	CMFCButton		m_wndRegEx;
+	class CCheckButton : public CMFCButton
+	{
+	public:
+		void OnDrawBorder(CDC* pDC, CRect& rectClient, UINT uiState) override
+		{
+			//CMFCButton::OnDrawBorder(pDC, rectClient, uiState);
+			UNREFERENCED_PARAMETER(uiState);
+			rectClient.DeflateRect(1, 1);
+			COLORREF clrPen = (m_bPushed || m_bChecked) ? RGB(0,84,153) : m_bHighlighted ? RGB(0,120,215) : RGB(173, 173, 173);
+			CPen pen(PS_SOLID, 1, clrPen);
+			CBrush br(m_bChecked ? RGB(204, 228, 247) : RGB(225, 225, 225));
+			auto oldBrush = pDC->SelectObject(&br);
+			auto oldPen = pDC->SelectObject(&pen);
+			pDC->Rectangle(rectClient);
+			pDC->SelectObject(oldPen);
+			pDC->SelectObject(oldBrush);
+			rectClient.DeflateRect(1, 1);
+		}
+	};
+	CCheckButton	m_wndMatchCase;
+	CCheckButton	m_wndMatchWord;
+	CCheckButton	m_wndRegEx;
 	CComboBox		m_wndScope;
 
 	class CDockButton : public CMFCButton
