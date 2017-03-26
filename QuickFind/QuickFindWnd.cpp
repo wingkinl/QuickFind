@@ -269,6 +269,16 @@ void CQuickFindWnd::SwitchFloatDock(BOOL bFloat, CWnd* pWndOwner)
 // To work around this, create this window as a sibling window instead of a
 // a child.
 
+CWnd* CQuickFindWnd::GetDockParent(CWnd* pWndOwner) const
+{
+#ifdef _QF_USE_OWNER_AS_PARENT
+	CWnd* pWndParent = pWndOwner;
+#else
+	CWnd* pWndParent = pWndOwner->GetParent();
+#endif // _QF_USE_OWNER_AS_PARENT
+	return pWndParent;
+}
+
 void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 {
 	ASSERT_VALID(pWndOwner);
@@ -283,16 +293,17 @@ void CQuickFindWnd::SetNotifyOwner(CWnd* pWndOwner)
 	}
 	else
 	{
-	#ifdef _QF_USE_OWNER_AS_PARENT
-		CWnd* pWndParent = pWndOwner;
-	#else
-		CWnd* pWndParent = pWndOwner->GetParent();
-	#endif // _QF_USE_OWNER_AS_PARENT
+		CWnd* pWndParent = GetDockParent(pWndOwner);
 		pWndParent->ModifyStyle(0, WS_CLIPCHILDREN);
+		CWnd* pWndSibling = pWndParent->GetWindow(GW_CHILD);
+		while (pWndSibling)
+		{
+			pWndSibling->ModifyStyle(0, WS_CLIPSIBLINGS);
+			pWndSibling = pWndSibling->GetNextWindow();
+		}
 		SetParent(pWndParent);
 		ModifyStyle(WS_POPUP, WS_CHILD);
 	}
-	pWndOwner->ModifyStyle(0, WS_CLIPSIBLINGS);
 }
 
 BOOL CQuickFindWnd::SetScopeItems(const CStringArray& saItems, int nActiveIndex)

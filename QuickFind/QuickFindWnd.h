@@ -135,6 +135,8 @@ protected:
 
 	BOOL IsShowReplaceUI() const;
 	BOOL IsShowOptionsUI() const;
+
+	virtual CWnd* GetDockParent(CWnd* pWndOwner) const;
 protected:
 	CSearchComboBox	m_wndFind;
 	
