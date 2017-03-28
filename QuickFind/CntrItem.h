@@ -5,7 +5,7 @@
 #pragma once
 
 class CQuickFindRichEditDoc;
-class CQuickFindView;
+class CQuickFindRichEditView;
 
 class CQuickFindCntrItem : public CRichEditCntrItem
 {
@@ -23,8 +23,8 @@ public:
 public:
 	CQuickFindRichEditDoc* GetDocument()
 		{ return reinterpret_cast<CQuickFindRichEditDoc*>(CRichEditCntrItem::GetDocument()); }
-	CQuickFindView* GetActiveView()
-		{ return reinterpret_cast<CQuickFindView*>(CRichEditCntrItem::GetActiveView()); }
+	CQuickFindRichEditView* GetActiveView()
+		{ return reinterpret_cast<CQuickFindRichEditView*>(CRichEditCntrItem::GetActiveView()); }
 
 // Implementation
 public:

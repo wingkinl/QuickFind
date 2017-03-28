@@ -208,7 +208,7 @@
     <ClCompile Include="QuickFind.cpp" />
     <ClCompile Include="QuickFindRichEditDoc.cpp" />
     <ClCompile Include="QuickFindRichEditView.cpp" />
-    <ClCompile Include="QuickFindView.cpp" />
+    <ClCompile Include="QuickFindView.inl" />
     <ClCompile Include="QuickFindWnd.cpp" />
     <ClCompile Include="QuickFindWndDemo.cpp" />
     <ClCompile Include="SearchComboBox.cpp" />
@@ -233,7 +233,7 @@
     <Image Include="res\MatchCase.ico" />
     <Image Include="res\MatchWord.ico" />
     <Image Include="res\QuickFind.ico" />
-    <Image Include="res\QuickFindRichEditDoc.ico" />
+    <Image Include="res\QuickFindDoc.ico" />
     <Image Include="res\RegEx.ico" />
     <Image Include="res\ReplaceAll.ico" />
     <Image Include="res\ReplaceNext.ico" />

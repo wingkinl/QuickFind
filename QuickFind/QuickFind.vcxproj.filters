@@ -80,7 +80,7 @@
     <ClCompile Include="QuickFindRichEditDoc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="QuickFindView.cpp">
+    <ClCompile Include="QuickFindView.inl">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CntrItem.cpp">
@@ -111,7 +111,7 @@
     <Image Include="UserImages.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="res\QuickFindRichEditDoc.ico">
+    <Image Include="res\QuickFindDoc.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\QuickFind.ico">

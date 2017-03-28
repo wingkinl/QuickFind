@@ -7,13 +7,11 @@
 
 class CQuickFindWndDemo;
 
-typedef CRichEditView	CQuickFindViewBase;
-
+template <typename CQuickFindViewBase>
 class CQuickFindView : public CQuickFindViewBase
 {
 protected: // create from serialization only
 	CQuickFindView();
-	DECLARE_DYNCREATE(CQuickFindView)
 
 // Attributes
 public:
@@ -28,8 +26,9 @@ protected:
 	
 	virtual CQuickFindWnd* CreateFindReplaceWindow();
 
-	CString GetSelectedOrCursorText() const;
-	BOOL CanDoReplace() const;
+	virtual void SetText(LPCTSTR pszText) = 0;
+	virtual CString GetSelectedOrCursorText() const = 0;
+	virtual BOOL CanDoReplace() const = 0;
 	// Implementation
 public:
 	virtual ~CQuickFindView();
@@ -39,12 +38,12 @@ public:
 #endif
 	void OnEditFindReplace(BOOL bFind);
 
-	BOOL OnFind(CQuickFindWndDemo* pQuickFindWnd);
-	BOOL OnFindAll(CQuickFindWndDemo* pQuickFindWnd);
-	BOOL OnIncrementalFind(CQuickFindWndDemo* pQuickFindWnd);
+	virtual BOOL OnFind(CQuickFindWndDemo* pQuickFindWnd);
+	virtual BOOL OnFindAll(CQuickFindWndDemo* pQuickFindWnd);
+	virtual BOOL OnIncrementalFind(CQuickFindWndDemo* pQuickFindWnd);
 
-	BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd);
-	BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd);
+	virtual BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd);
+	virtual BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd);
 protected:
 	void CheckCloseOwnedFindWindow();
 	BOOL PreTranslateMessage(MSG* pMsg) override;
@@ -56,8 +55,6 @@ protected:
 	afx_msg LRESULT OnQuickFindCmd(WPARAM wp, LPARAM lp);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnIdleUpdateCmdUI();
-
-	DECLARE_MESSAGE_MAP()
 };
 
 

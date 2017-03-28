@@ -210,7 +210,7 @@
     <ClCompile Include="QuickFind.cpp" />
     <ClCompile Include="QuickFindRichEditDoc.cpp" />
     <ClCompile Include="QuickFindRichEditView.cpp" />
-    <ClCompile Include="QuickFindView.cpp" />
+    <ClCompile Include="QuickFindView.inl" />
     <ClCompile Include="QuickFindWnd.cpp" />
     <ClCompile Include="QuickFindWndDemo.cpp" />
     <ClCompile Include="SearchComboBox.cpp" />

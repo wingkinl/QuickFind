@@ -1,10 +1,11 @@
 #pragma once
+#include "QuickFindView.inl"
 
 class CQuickFindCntrItem;
 
 // CQuickFindRichEditView view
 
-typedef CRichEditView	CQuickFindRichEditViewBase;
+typedef CQuickFindView<CRichEditView>	CQuickFindRichEditViewBase;
 
 class CQuickFindRichEditView : public CQuickFindRichEditViewBase
 {
@@ -15,7 +16,17 @@ protected:
 	virtual ~CQuickFindRichEditView();
 public:
 	CQuickFindRichEditDoc* GetDocument() const;
+
+	void SetText(LPCTSTR pszText) override;
+	CString GetSelectedOrCursorText() const override;
+	BOOL CanDoReplace() const override;
 public:
+	BOOL OnFind(CQuickFindWndDemo* pQuickFindWnd) override;
+	BOOL OnFindAll(CQuickFindWndDemo* pQuickFindWnd) override;
+	BOOL OnIncrementalFind(CQuickFindWndDemo* pQuickFindWnd) override;
+
+	BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd) override;
+	BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd) override;
 protected:
 	virtual void OnInitialUpdate(); // called first time after construct
 
