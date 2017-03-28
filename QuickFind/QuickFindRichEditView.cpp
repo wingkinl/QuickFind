@@ -2,7 +2,12 @@
 //
 
 #include "stdafx.h"
-#include "QuickFindDoc.h"
+// SHARED_HANDLERS can be defined in an ATL project implementing preview, thumbnail
+// and search filter handlers and allows sharing of document code with that project.
+#ifndef SHARED_HANDLERS
+#include "QuickFind.h"
+#endif
+#include "QuickFindRichEditDoc.h"
 #include "QuickFindRichEditView.h"
 #include "CntrItem.h"
 
@@ -22,6 +27,8 @@ CQuickFindRichEditView::~CQuickFindRichEditView()
 
 BEGIN_MESSAGE_MAP(CQuickFindRichEditView, CQuickFindRichEditViewBase)
 	ON_WM_DESTROY()
+	ON_WM_CONTEXTMENU()
+	ON_WM_RBUTTONUP()
 END_MESSAGE_MAP()
 
 void CQuickFindRichEditView::OnInitialUpdate()
@@ -45,6 +52,18 @@ void CQuickFindRichEditView::OnDestroy()
 	CQuickFindRichEditViewBase::OnDestroy();
 }
 
+void CQuickFindRichEditView::OnRButtonUp(UINT /* nFlags */, CPoint point)
+{
+	ClientToScreen(&point);
+	OnContextMenu(this, point);
+}
+
+void CQuickFindRichEditView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
+{
+#ifndef SHARED_HANDLERS
+	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EDIT, point.x, point.y, this, TRUE);
+#endif
+}
 
 // CQuickFindRichEditView diagnostics
 
@@ -61,10 +80,10 @@ void CQuickFindRichEditView::Dump(CDumpContext& dc) const
 }
 #endif
 
-CQuickFindDoc* CQuickFindRichEditView::GetDocument() const
+CQuickFindRichEditDoc* CQuickFindRichEditView::GetDocument() const
 {
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CQuickFindDoc)));
-	return (CQuickFindDoc*)m_pDocument;
+	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CQuickFindRichEditDoc)));
+	return (CQuickFindRichEditDoc*)m_pDocument;
 }
 #endif //_DEBUG
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-class CQuickFindDoc;
+class CQuickFindRichEditDoc;
 class CQuickFindView;
 
 class CQuickFindCntrItem : public CRichEditCntrItem
@@ -13,7 +13,7 @@ class CQuickFindCntrItem : public CRichEditCntrItem
 
 // Constructors
 public:
-	CQuickFindCntrItem(REOBJECT* preo = NULL, CQuickFindDoc* pContainer = NULL);
+	CQuickFindCntrItem(REOBJECT* preo = NULL, CQuickFindRichEditDoc* pContainer = NULL);
 		// Note: pContainer is allowed to be NULL to enable IMPLEMENT_SERIALIZE
 		//  IMPLEMENT_SERIALIZE requires the class have a constructor with
 		//  zero arguments.  Normally, OLE items are constructed with a
@@ -21,8 +21,8 @@ public:
 
 // Attributes
 public:
-	CQuickFindDoc* GetDocument()
-		{ return reinterpret_cast<CQuickFindDoc*>(CRichEditCntrItem::GetDocument()); }
+	CQuickFindRichEditDoc* GetDocument()
+		{ return reinterpret_cast<CQuickFindRichEditDoc*>(CRichEditCntrItem::GetDocument()); }
 	CQuickFindView* GetActiveView()
 		{ return reinterpret_cast<CQuickFindView*>(CRichEditCntrItem::GetActiveView()); }
 

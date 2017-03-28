@@ -9,8 +9,9 @@
 #include "MainFrm.h"
 
 #include "ChildFrm.h"
-#include "QuickFindDoc.h"
+#include "QuickFindRichEditDoc.h"
 #include "QuickFindView.h"
+#include "QuickFindRichEditView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -107,9 +108,9 @@ BOOL CQuickFindApp::InitInstance()
 	//  serve as the connection between documents, frame windows and views
 	CMultiDocTemplate* pDocTemplate;
 	pDocTemplate = new CMultiDocTemplate(IDR_QuickFindTYPE,
-		RUNTIME_CLASS(CQuickFindDoc),
+		RUNTIME_CLASS(CQuickFindRichEditDoc),
 		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
-		RUNTIME_CLASS(CQuickFindView));
+		RUNTIME_CLASS(CQuickFindRichEditView));
 	if (!pDocTemplate)
 		return FALSE;
 	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);

@@ -189,7 +189,7 @@
     <ClInclude Include="ComboBoxBrowseCtrl.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="QuickFind.h" />
-    <ClInclude Include="QuickFindDoc.h" />
+    <ClInclude Include="QuickFindRichEditDoc.h" />
     <ClInclude Include="QuickFindInfo.h" />
     <ClInclude Include="QuickFindRichEditView.h" />
     <ClInclude Include="QuickFindView.h" />
@@ -206,7 +206,7 @@
     <ClCompile Include="ComboBoxBrowseCtrl.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="QuickFind.cpp" />
-    <ClCompile Include="QuickFindDoc.cpp" />
+    <ClCompile Include="QuickFindRichEditDoc.cpp" />
     <ClCompile Include="QuickFindRichEditView.cpp" />
     <ClCompile Include="QuickFindView.cpp" />
     <ClCompile Include="QuickFindWnd.cpp" />
@@ -233,7 +233,7 @@
     <Image Include="res\MatchCase.ico" />
     <Image Include="res\MatchWord.ico" />
     <Image Include="res\QuickFind.ico" />
-    <Image Include="res\QuickFindDoc.ico" />
+    <Image Include="res\QuickFindRichEditDoc.ico" />
     <Image Include="res\RegEx.ico" />
     <Image Include="res\ReplaceAll.ico" />
     <Image Include="res\ReplaceNext.ico" />

@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include "QuickFind.h"
 
-#include "QuickFindDoc.h"
+#include "QuickFindRichEditDoc.h"
 #include "QuickFindView.h"
 #include "CntrItem.h"
 
@@ -18,7 +18,7 @@
 
 IMPLEMENT_SERIAL(CQuickFindCntrItem, CRichEditCntrItem, 0)
 
-CQuickFindCntrItem::CQuickFindCntrItem(REOBJECT* preo, CQuickFindDoc* pContainer)
+CQuickFindCntrItem::CQuickFindCntrItem(REOBJECT* preo, CQuickFindRichEditDoc* pContainer)
 	: CRichEditCntrItem(preo, pContainer)
 {
 	// TODO: add one-time construction code here

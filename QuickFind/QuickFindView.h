@@ -5,7 +5,6 @@
 #pragma once
 #include "QuickFindWnd.h"
 
-class CQuickFindCntrItem;
 class CQuickFindWndDemo;
 
 typedef CRichEditView	CQuickFindViewBase;
@@ -18,8 +17,7 @@ protected: // create from serialization only
 
 // Attributes
 public:
-	CQuickFindDoc* GetDocument() const;
-
+	
 // Operations
 public:
 
@@ -53,9 +51,6 @@ protected:
 // Generated message map functions
 protected:
 	afx_msg void OnDestroy();
-	afx_msg void OnFilePrintPreview();
-	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
-	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg void OnEditFind();
 	afx_msg void OnEditReplace();
 	afx_msg LRESULT OnQuickFindCmd(WPARAM wp, LPARAM lp);
@@ -65,8 +60,4 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-#ifndef _DEBUG  // debug version in QuickFindView.cpp
-inline CQuickFindDoc* CQuickFindView::GetDocument() const
-   { return reinterpret_cast<CQuickFindDoc*>(m_pDocument); }
-#endif
 

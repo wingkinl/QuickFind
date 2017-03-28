@@ -33,7 +33,7 @@
     <ClInclude Include="ChildFrm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="QuickFindDoc.h">
+    <ClInclude Include="QuickFindRichEditDoc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QuickFindView.h">
@@ -77,7 +77,7 @@
     <ClCompile Include="ChildFrm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="QuickFindDoc.cpp">
+    <ClCompile Include="QuickFindRichEditDoc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="QuickFindView.cpp">
@@ -111,7 +111,7 @@
     <Image Include="UserImages.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="res\QuickFindDoc.ico">
+    <Image Include="res\QuickFindRichEditDoc.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\QuickFind.ico">

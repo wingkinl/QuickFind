@@ -9,7 +9,7 @@
 #include "QuickFind.h"
 #endif
 
-#include "QuickFindDoc.h"
+#include "QuickFindRichEditDoc.h"
 #include "CntrItem.h"
 #include "resource.h"
 #include "QuickFindView.h"
@@ -28,8 +28,6 @@ static const UINT _QUICKFINDMSG = ::RegisterWindowMessage(QUICKFINDMSGSTRING);
 
 BEGIN_MESSAGE_MAP(CQuickFindView, CQuickFindViewBase)
 	ON_WM_DESTROY()
-	ON_WM_CONTEXTMENU()
-	ON_WM_RBUTTONUP()
 	ON_COMMAND(ID_EDIT_FIND, &CQuickFindView::OnEditFind)
 	ON_COMMAND(ID_EDIT_REPLACE, &CQuickFindView::OnEditReplace)
 	ON_REGISTERED_MESSAGE(_QUICKFINDMSG, &CQuickFindView::OnQuickFindCmd)
@@ -82,30 +80,8 @@ BOOL CQuickFindView::PreTranslateMessage(MSG* pMsg)
 
 void CQuickFindView::OnDestroy()
 {
-	// Deactivate the item on destruction; this is important
-	// when a splitter view is being used
-   COleClientItem* pActiveItem = GetDocument()->GetInPlaceActiveItem(this);
-   if (pActiveItem != NULL && pActiveItem->GetActiveView() == this)
-   {
-      pActiveItem->Deactivate();
-      ASSERT(GetDocument()->GetInPlaceActiveItem(this) == NULL);
-   }
    CheckCloseOwnedFindWindow();
    CQuickFindViewBase::OnDestroy();
-}
-
-
-void CQuickFindView::OnRButtonUp(UINT /* nFlags */, CPoint point)
-{
-	ClientToScreen(&point);
-	OnContextMenu(this, point);
-}
-
-void CQuickFindView::OnContextMenu(CWnd* /* pWnd */, CPoint point)
-{
-#ifndef SHARED_HANDLERS
-	theApp.GetContextMenuManager()->ShowPopupMenu(IDR_POPUP_EDIT, point.x, point.y, this, TRUE);
-#endif
 }
 
 
@@ -120,12 +96,6 @@ void CQuickFindView::AssertValid() const
 void CQuickFindView::Dump(CDumpContext& dc) const
 {
 	CQuickFindViewBase::Dump(dc);
-}
-
-CQuickFindDoc* CQuickFindView::GetDocument() const // non-debug version is inline
-{
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CQuickFindDoc)));
-	return (CQuickFindDoc*)m_pDocument;
 }
 #endif //_DEBUG
 
