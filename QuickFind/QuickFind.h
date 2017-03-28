@@ -8,7 +8,20 @@
 #endif
 
 #include "resource.h"       // main symbols
+#include "QuickFindInfo.h"
 
+class CQuickFindWnd;
+
+class _QUICKFIND_STATE
+{
+public:
+	_QUICKFIND_STATE();
+
+	CQuickFindWnd*	pQuickFindWnd;
+	QUICKFIND_INFO	info;
+};
+
+extern _QUICKFIND_STATE _quickfindState;
 
 // CQuickFindApp:
 // See QuickFind.cpp for the implementation of this class

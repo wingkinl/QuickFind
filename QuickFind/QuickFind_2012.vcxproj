@@ -94,6 +94,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -116,6 +117,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -191,8 +193,10 @@
     <ClInclude Include="QuickFind.h" />
     <ClInclude Include="QuickFindDoc.h" />
     <ClInclude Include="QuickFindInfo.h" />
+    <ClInclude Include="QuickFindRichEditView.h" />
     <ClInclude Include="QuickFindView.h" />
     <ClInclude Include="QuickFindWnd.h" />
+    <ClInclude Include="QuickFindWndDemo.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SearchComboBox.h" />
     <ClInclude Include="stdafx.h" />
@@ -205,8 +209,10 @@
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="QuickFind.cpp" />
     <ClCompile Include="QuickFindDoc.cpp" />
+    <ClCompile Include="QuickFindRichEditView.cpp" />
     <ClCompile Include="QuickFindView.cpp" />
     <ClCompile Include="QuickFindWnd.cpp" />
+    <ClCompile Include="QuickFindWndDemo.cpp" />
     <ClCompile Include="SearchComboBox.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -243,4 +249,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="QuickFind.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

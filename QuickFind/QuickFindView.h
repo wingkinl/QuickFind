@@ -6,16 +6,11 @@
 #include "QuickFindWnd.h"
 
 class CQuickFindCntrItem;
+class CQuickFindWndDemo;
 
-class CQuickFindWndDemo : public CQuickFindWnd
-{
-public:
-	CQuickFindWndDemo();
-protected:
-	DECLARE_MESSAGE_MAP()
-};
+typedef CRichEditView	CQuickFindViewBase;
 
-class CQuickFindView : public CRichEditView
+class CQuickFindView : public CQuickFindViewBase
 {
 protected: // create from serialization only
 	CQuickFindView();
@@ -30,13 +25,13 @@ public:
 
 // Overrides
 public:
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 protected:
 	virtual void OnInitialUpdate(); // called first time after construct
 	
 	virtual CQuickFindWnd* CreateFindReplaceWindow();
 
-	CString GetSelText() const;
+	CString GetSelectedOrCursorText() const;
+	BOOL CanDoReplace() const;
 	// Implementation
 public:
 	virtual ~CQuickFindView();
@@ -48,7 +43,7 @@ public:
 
 	BOOL OnFind(CQuickFindWndDemo* pQuickFindWnd);
 	BOOL OnFindAll(CQuickFindWndDemo* pQuickFindWnd);
-	BOOL OnHighlightFind(CQuickFindWndDemo* pQuickFindWnd);
+	BOOL OnIncrementalFind(CQuickFindWndDemo* pQuickFindWnd);
 
 	BOOL OnReplace(CQuickFindWndDemo* pQuickFindWnd);
 	BOOL OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd);
@@ -65,7 +60,7 @@ protected:
 	afx_msg void OnEditReplace();
 	afx_msg LRESULT OnQuickFindCmd(WPARAM wp, LPARAM lp);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg LRESULT OnIdleUpdateCmdUI(WPARAM wParam, LPARAM);
+	afx_msg void OnIdleUpdateCmdUI();
 
 	DECLARE_MESSAGE_MAP()
 };

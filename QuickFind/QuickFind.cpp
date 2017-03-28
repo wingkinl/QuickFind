@@ -16,6 +16,13 @@
 #define new DEBUG_NEW
 #endif
 
+_QUICKFIND_STATE::_QUICKFIND_STATE()
+{
+	pQuickFindWnd = nullptr;
+}
+
+_QUICKFIND_STATE _quickfindState;
+
 
 // CQuickFindApp
 
