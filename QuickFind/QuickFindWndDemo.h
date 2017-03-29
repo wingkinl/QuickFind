@@ -30,9 +30,6 @@ public:
 public:
 	BOOL OnInitDialog() override;
 
-	// combination of SCFIND_*
-	DWORD GetSCSearchFlags() const;
-
 	FindScope GetCurScope() const;
 
 	void UpdateScope(LONG nSelStart, LONG nSelEnd, FindScope scope);

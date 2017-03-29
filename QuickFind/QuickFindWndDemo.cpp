@@ -28,20 +28,6 @@ BOOL CQuickFindWndDemo::OnInitDialog()
 	return bRet;
 }
 
-DWORD CQuickFindWndDemo::GetSCSearchFlags() const
-{
-	DWORD dwSearchFlags = 0;
-	if (IsMatchCase())
-		dwSearchFlags |= SCFIND_MATCHCASE;
-
-	if (IsMatchWholeWord())
-		dwSearchFlags |= SCFIND_WHOLEWORD;
-
-	if (IsUseRegEx())
-		dwSearchFlags |= (SCFIND_REGEXP | (m_bPOSIXRegEx ? SCFIND_POSIX : SCFIND_CXX11REGEX));
-	return dwSearchFlags;
-}
-
 auto CQuickFindWndDemo::GetCurScope() const -> FindScope
 {
 	return (FindScope)m_wndScope.GetCurSel();

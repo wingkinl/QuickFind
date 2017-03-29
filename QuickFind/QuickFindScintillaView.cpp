@@ -71,6 +71,20 @@ BOOL CQuickFindScintillaView::CanDoReplace() const
 	return !const_cast<CQuickFindScintillaView*>(this)->GetCtrl().GetReadOnly();
 }
 
+static DWORD GetSCSearchFlags(CQuickFindWndDemo* pQuickFindWnd)
+{
+	DWORD dwSearchFlags = 0;
+	if (pQuickFindWnd->IsMatchCase())
+		dwSearchFlags |= SCFIND_MATCHCASE;
+
+	if (pQuickFindWnd->IsMatchWholeWord())
+		dwSearchFlags |= SCFIND_WHOLEWORD;
+
+	if (pQuickFindWnd->IsUseRegEx())
+		dwSearchFlags |= (SCFIND_REGEXP | (m_bPOSIXRegEx ? SCFIND_POSIX : SCFIND_CXX11REGEX));
+	return dwSearchFlags;
+}
+
 BOOL CQuickFindScintillaView::OnFind(CQuickFindWndDemo* pQuickFindWnd)
 {
 	ASSERT_VALID(this);
@@ -92,7 +106,7 @@ BOOL CQuickFindScintillaView::OnFind(CQuickFindWndDemo* pQuickFindWnd)
 		pCharRange = &range;
 	}
 	BOOL bNext = pQuickFindWnd->IsFindReplaceNext();
-	DWORD dwSCFlags = pQuickFindWnd->GetSCSearchFlags();
+	DWORD dwSCFlags = GetSCSearchFlags(pQuickFindWnd);
 	BOOL bRet = FindTextSimple(strFind, bNext, dwSCFlags, pCharRange);
 	return bRet;
 }
@@ -121,7 +135,7 @@ BOOL CQuickFindScintillaView::OnIncrementalFind(CQuickFindWndDemo* pQuickFindWnd
 #endif //#ifdef _UNICODE
 	ft.chrg.cpMin = 0;
 	ft.chrg.cpMax = ctrl.GetLength();
-	DWORD dwSCFlags = pQuickFindWnd->GetSCSearchFlags();
+	DWORD dwSCFlags = GetSCSearchFlags(pQuickFindWnd);
 	BOOL bRet = FindAndSelect(ft, dwSCFlags, nFindBeginPos) != -1;
 	return bRet;
 }
@@ -147,7 +161,7 @@ BOOL CQuickFindScintillaView::OnReplace(CQuickFindWndDemo* pQuickFindWnd)
 		pCharRange = &range;
 	}
 	BOOL bNext = pQuickFindWnd->IsFindReplaceNext();
-	DWORD dwSCFlags = pQuickFindWnd->GetSCSearchFlags();
+	DWORD dwSCFlags = GetSCSearchFlags(pQuickFindWnd);
 	if (!SameAsSelected(strFind, dwSCFlags))
 	{
 		return FindTextSimple(strFind, bNext, dwSCFlags, pCharRange);
@@ -169,7 +183,7 @@ BOOL CQuickFindScintillaView::OnReplaceAll(CQuickFindWndDemo* pQuickFindWnd)
 		return FALSE;
 	ASSERT(pQuickFindWnd);
 	auto& ctrl = GetCtrl();
-	DWORD dwSCFlags = pQuickFindWnd->GetSCSearchFlags();
+	DWORD dwSCFlags = GetSCSearchFlags(pQuickFindWnd);
 
 	CString strFind = pQuickFindWnd->GetFindString();
 	if (strFind.IsEmpty())
