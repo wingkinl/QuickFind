@@ -81,7 +81,7 @@ static DWORD GetSCSearchFlags(CQuickFindWndDemo* pQuickFindWnd)
 		dwSearchFlags |= SCFIND_WHOLEWORD;
 
 	if (pQuickFindWnd->IsUseRegEx())
-		dwSearchFlags |= (SCFIND_REGEXP | (m_bPOSIXRegEx ? SCFIND_POSIX : SCFIND_CXX11REGEX));
+		dwSearchFlags |= SCFIND_REGEXP | SCFIND_CXX11REGEX;
 	return dwSearchFlags;
 }
 

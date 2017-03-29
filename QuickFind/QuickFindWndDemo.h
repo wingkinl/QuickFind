@@ -17,7 +17,6 @@ public:
 		FindScopeSize,
 		// do not append!
 	};
-	BOOL			m_bPOSIXRegEx;
 
 	LONG			m_nSelBegin;
 	LONG			m_nSelEnd;

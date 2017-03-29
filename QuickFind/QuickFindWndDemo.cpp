@@ -5,7 +5,6 @@ IMPLEMENT_DYNAMIC(CQuickFindWndDemo, CQuickFindWndDemoBase)
 
 CQuickFindWndDemo::CQuickFindWndDemo(void)
 {
-	m_bPOSIXRegEx = FALSE;
 	m_nSelBegin = m_nSelEnd = 0;
 }
 

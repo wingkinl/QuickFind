@@ -32,7 +32,7 @@ _QUICKFIND_STATE _quickfindState;
 BEGIN_MESSAGE_MAP(CQuickFindApp, CWinAppEx)
 	ON_COMMAND(ID_APP_ABOUT, &CQuickFindApp::OnAppAbout)
 	// Standard file based document commands
-	ON_COMMAND(ID_FILE_NEW, &CWinAppEx::OnFileNew)
+	ON_COMMAND(ID_FILE_NEW, &CQuickFindApp::OnFileNew)
 	ON_COMMAND(ID_FILE_OPEN, &CWinAppEx::OnFileOpen)
 END_MESSAGE_MAP()
 
@@ -179,8 +179,6 @@ BOOL CQuickFindApp::InitInstance()
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
-
-
 	// Dispatch commands specified on the command line.  Will return FALSE if
 	// app was launched with /RegServer, /Register, /Unregserver or /Unregister.
 	if (!ProcessShellCommand(cmdInfo))
@@ -262,6 +260,21 @@ void CQuickFindApp::LoadCustomState()
 
 void CQuickFindApp::SaveCustomState()
 {
+}
+
+void CQuickFindApp::OnFileNew()
+{
+#ifdef _ENABLE_SCINTILLA_BUILD
+	for (POSITION tPos = theApp.m_pDocManager->GetFirstDocTemplatePosition(); tPos != NULL;)
+	{
+		CDocTemplate* ptempDocTemplate =
+			theApp.m_pDocManager->GetNextDocTemplate(tPos);
+		//this will make the view visible.
+		ptempDocTemplate->OpenDocumentFile(NULL);
+	}
+#else
+	CWinAppEx::OnFileNew();
+#endif // _ENABLE_SCINTILLA_BUILD
 }
 
 // CQuickFindApp message handlers
