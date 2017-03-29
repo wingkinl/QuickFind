@@ -1,12 +1,43 @@
 #pragma once
 #include "quickfindwnd.h"
 
-class CQuickFindWndDemo : public CQuickFindWnd
+typedef CQuickFindWnd	CQuickFindWndDemoBase;
+
+class CQuickFindWndDemo : public CQuickFindWndDemoBase
 {
+	DECLARE_DYNAMIC(CQuickFindWndDemo)
 public:
-	CQuickFindWndDemo(void);
-	~CQuickFindWndDemo(void);
+	CQuickFindWndDemo();
+	~CQuickFindWndDemo();
 public:
+	enum FindScope {
+		FindScopeSelection,
+		FindScopeCurDoc,
+
+		FindScopeSize,
+		// do not append!
+	};
+	BOOL			m_bPOSIXRegEx;
+
+	LONG			m_nSelBegin;
+	LONG			m_nSelEnd;
+
+	enum CustomCmd {
+		CustomCmdOnUpdateActiveStatus,
+
+		CustomCmdLast,
+	};
+public:
+	BOOL OnInitDialog() override;
+
+	// combination of SCFIND_*
+	DWORD GetSCSearchFlags() const;
+
+	FindScope GetCurScope() const;
+
+	void UpdateScope(LONG nSelStart, LONG nSelEnd, FindScope scope);
+protected:
+	void OnUpdateActiveStatus() override;
 
 	DECLARE_MESSAGE_MAP()
 };
