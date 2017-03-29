@@ -28,5 +28,6 @@ ipch/
 *.psess
 *.vsp
 *.vspx
+*.suo
 
 .vs/

@@ -63,6 +63,12 @@
     <ClInclude Include="QuickFindRichEditDoc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ScintillaWrapper\ScintillaCtrl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScintillaWrapper\ScintillaDocView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QuickFind.cpp">
@@ -99,6 +105,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="QuickFindView.inl">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScintillaWrapper\ScintillaCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScintillaWrapper\ScintillaDocView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
