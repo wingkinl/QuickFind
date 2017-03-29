@@ -41,6 +41,9 @@ public:
 // Implementation
 	UINT  m_nAppLook;
 	BOOL  m_bHiColorIcons;
+#ifdef _ENABLE_SCINTILLA_BUILD
+	HINSTANCE m_hSciDLL;
+#endif // _ENABLE_SCINTILLA_BUILD
 
 	virtual void PreLoadState();
 	virtual void LoadCustomState();

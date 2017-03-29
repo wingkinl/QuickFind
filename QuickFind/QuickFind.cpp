@@ -12,6 +12,8 @@
 #include "QuickFindRichEditDoc.h"
 #include "QuickFindView.h"
 #include "QuickFindRichEditView.h"
+#include "QuickFindScintillaDoc.h"
+#include "QuickFindScintillaView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -55,6 +57,33 @@ CQuickFindApp theApp;
 
 
 // CQuickFindApp initialization
+
+#ifdef _ENABLE_SCINTILLA_BUILD
+HMODULE LoadLibraryFromApplicationDirectory(LPCTSTR lpFileName)
+{
+	//Get the Application diretory
+	TCHAR szFullPath[_MAX_PATH];
+	szFullPath[0] = _T('\0');
+	if (GetModuleFileName(nullptr, szFullPath, _countof(szFullPath)) == 0)
+		return nullptr;
+
+	//Form the new path
+	TCHAR szDrive[_MAX_DRIVE];
+	szDrive[0] = _T('\0');
+	TCHAR szDir[_MAX_DIR];
+	szDir[0] = _T('\0');
+	_tsplitpath_s(szFullPath, szDrive, sizeof(szDrive) / sizeof(TCHAR), szDir, sizeof(szDir) / sizeof(TCHAR), nullptr, 0, nullptr, 0);
+	TCHAR szFname[_MAX_FNAME];
+	szFname[0] = _T('\0');
+	TCHAR szExt[_MAX_EXT];
+	szExt[0] = _T('\0');
+	_tsplitpath_s(lpFileName, nullptr, 0, nullptr, 0, szFname, sizeof(szFname) / sizeof(TCHAR), szExt, sizeof(szExt) / sizeof(TCHAR));
+	_tmakepath_s(szFullPath, sizeof(szFullPath) / sizeof(TCHAR), szDrive, szDir, szFname, szExt);
+
+	//Delegate to LoadLibrary    
+	return LoadLibrary(szFullPath);
+}
+#endif // _ENABLE_SCINTILLA_BUILD
 
 BOOL CQuickFindApp::InitInstance()
 {
@@ -107,7 +136,7 @@ BOOL CQuickFindApp::InitInstance()
 	// Register the application's document templates.  Document templates
 	//  serve as the connection between documents, frame windows and views
 	CMultiDocTemplate* pDocTemplate;
-	pDocTemplate = new CMultiDocTemplate(IDR_QuickFindTYPE,
+	pDocTemplate = new CMultiDocTemplate(IDR_QuickFindRichEditTYPE,
 		RUNTIME_CLASS(CQuickFindRichEditDoc),
 		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
 		RUNTIME_CLASS(CQuickFindRichEditView));
@@ -115,6 +144,26 @@ BOOL CQuickFindApp::InitInstance()
 		return FALSE;
 	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
 	AddDocTemplate(pDocTemplate);
+
+#ifdef _ENABLE_SCINTILLA_BUILD
+	m_hSciDLL = LoadLibraryFromApplicationDirectory(_T("SciLexer.dll"));
+	if (m_hSciDLL == nullptr)
+	{
+		AfxMessageBox(_T("Scintilla DLL is not installed, Please download the SciTE editor and copy the SciLexer.dll into this application's directory"));
+		return FALSE;
+	}
+
+	pDocTemplate = new CMultiDocTemplate(IDR_QuickFindScintillaTYPE,
+		RUNTIME_CLASS(CQuickFindScintillaDoc),
+		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+		RUNTIME_CLASS(CQuickFindScintillaView));
+	if (!pDocTemplate)
+		return FALSE;
+	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
+	AddDocTemplate(pDocTemplate);
+#else
+#pragma message("scintilla-based view not enabled, put scintilla's header files to scintilla folder to enable build it.")
+#endif // _ENABLE_SCINTILLA_BUILD
 
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame;
@@ -147,7 +196,10 @@ int CQuickFindApp::ExitInstance()
 {
 	//TODO: handle additional resources you may have added
 	AfxOleTerm(FALSE);
-
+#ifdef _ENABLE_SCINTILLA_BUILD
+	if (m_hSciDLL)
+		FreeLibrary(m_hSciDLL);
+#endif // _ENABLE_SCINTILLA_BUILD
 	return CWinAppEx::ExitInstance();
 }
 

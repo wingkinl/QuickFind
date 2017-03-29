@@ -37,9 +37,13 @@
 
 
 #include <afxrich.h>            // MFC rich edit classes
+#include <afxcview.h>
 
 
-
+#ifdef _ENABLE_SCINTILLA_BUILD
+#include <memory>
+#include <Scintilla.h>
+#endif // _ENABLE_SCINTILLA_BUILD
 
 
 

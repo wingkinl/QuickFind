@@ -69,6 +69,12 @@
     <ClInclude Include="ScintillaWrapper\ScintillaDocView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="QuickFindScintillaDoc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QuickFindScintillaView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QuickFind.cpp">
@@ -111,6 +117,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScintillaWrapper\ScintillaDocView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QuickFindScintillaDoc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QuickFindScintillaView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,4 @@
-
+#pragma once
 // QuickFindView.cpp : implementation of the CQuickFindView class
 //
 

@@ -198,6 +198,8 @@
     <ClInclude Include="QuickFindRichEditDoc.h" />
     <ClInclude Include="QuickFindInfo.h" />
     <ClInclude Include="QuickFindRichEditView.h" />
+    <ClInclude Include="QuickFindScintillaDoc.h" />
+    <ClInclude Include="QuickFindScintillaView.h" />
     <ClInclude Include="QuickFindView.h" />
     <ClInclude Include="QuickFindWnd.h" />
     <ClInclude Include="QuickFindWndDemo.h" />
@@ -216,6 +218,8 @@
     <ClCompile Include="QuickFind.cpp" />
     <ClCompile Include="QuickFindRichEditDoc.cpp" />
     <ClCompile Include="QuickFindRichEditView.cpp" />
+    <ClCompile Include="QuickFindScintillaDoc.cpp" />
+    <ClCompile Include="QuickFindScintillaView.cpp" />
     <ClCompile Include="QuickFindView.inl" />
     <ClCompile Include="QuickFindWnd.cpp" />
     <ClCompile Include="QuickFindWndDemo.cpp" />
