@@ -162,7 +162,7 @@ BOOL CQuickFindApp::InitInstance()
 	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
 	AddDocTemplate(pDocTemplate);
 #else
-#pragma message("scintilla-based view not enabled, put scintilla's header files to scintilla folder to enable build it.")
+#pragma message("scintilla-based view not enabled, put scintilla's header files to scintilla folder to enable building it.")
 #endif // _ENABLE_SCINTILLA_BUILD
 
 	// create main MDI Frame window

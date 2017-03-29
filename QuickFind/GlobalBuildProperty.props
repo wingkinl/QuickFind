@@ -5,8 +5,9 @@
     <oRootDir>$(MSBuildThisFileDirectory)..\</oRootDir>
     <oSrcRootDir>$(MSBuildThisFileDirectory)</oSrcRootDir>
     <oScintillaSrcDir>$(oSrcRootDir)scintilla\</oScintillaSrcDir>
-    <oEnableScintillaBuild Condition="Exists($(oScintillaSrcDir))">True</oEnableScintillaBuild>
-    <oEnableScintillaBuild Condition="!Exists($(oScintillaSrcDir))">False</oEnableScintillaBuild>
+    <oScintillaHeaderPath>$(oScintillaSrcDir)Scintilla.h</oScintillaHeaderPath>
+    <oEnableScintillaBuild Condition="Exists($(oScintillaHeaderPath))">True</oEnableScintillaBuild>
+    <oEnableScintillaBuild Condition="!Exists($(oScintillaHeaderPath))">False</oEnableScintillaBuild>
     <oExcludeScintilla>!$(oEnableScintillaBuild)</oExcludeScintilla>
     <oDefaultPreprocessorDefinitions Condition="$(oEnableScintillaBuild)">_ENABLE_SCINTILLA_BUILD</oDefaultPreprocessorDefinitions>
   </PropertyGroup>
