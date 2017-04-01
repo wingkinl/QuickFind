@@ -1062,28 +1062,37 @@ void CQuickFindWnd::OnButtonFindAction()
 
 void CQuickFindWnd::OnMatchCase()
 {
-	if (m_wndMatchCase.GetCheck() != BST_UNCHECKED)
-		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchCase;
-	else
+	if (m_info.IsMatchCase())
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchCase;
+	else
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchCase;
+	BOOL bBtnChecked = m_wndMatchCase.GetCheck() != BST_UNCHECKED;
+	if (m_info.IsMatchCase() != bBtnChecked)
+		m_wndMatchCase.SetCheck(m_info.IsMatchCase());
 	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
 void CQuickFindWnd::OnMatchWord()
 {
-	if (m_wndMatchWord.GetCheck() != BST_UNCHECKED)
-		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchWord;
-	else
+	if (m_info.IsMatchWholeWord())
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsMatchWord;
+	else
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsMatchWord;
+	BOOL bBtnChecked = m_wndMatchWord.GetCheck() != BST_UNCHECKED;
+	if (m_info.IsMatchWholeWord() != bBtnChecked)
+		m_wndMatchWord.SetCheck(m_info.IsMatchWholeWord());
 	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
 void CQuickFindWnd::OnUseRegEx()
 {
-	if (m_wndRegEx.GetCheck() != BST_UNCHECKED)
-		m_info.dwFlags |= QUICKFIND_INFO::FlagsUseRegEx;
-	else
+	if (m_info.IsUseRegEx())
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsUseRegEx;
+	else
+		m_info.dwFlags |= QUICKFIND_INFO::FlagsUseRegEx;
+	BOOL bBtnChecked = m_wndRegEx.GetCheck() != BST_UNCHECKED;
+	if (m_info.IsUseRegEx() != bBtnChecked)
+		m_wndRegEx.SetCheck(m_info.IsUseRegEx());
 	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
 }
 
