@@ -41,14 +41,16 @@ END_MESSAGE_MAP()
 
 CQuickFindApp::CQuickFindApp()
 {
+	m_nAppLook = 0;
 	m_bHiColorIcons = TRUE;
 
 	// TODO: replace application ID string below with unique ID string; recommended
 	// format for string is CompanyName.ProductName.SubProduct.VersionInformation
 	SetAppID(_T("QuickFind.AppID.NoVersion"));
 
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
+#ifdef _ENABLE_SCINTILLA_BUILD
+	m_hSciDLL = nullptr;
+#endif // _ENABLE_SCINTILLA_BUILD
 }
 
 // The one and only CQuickFindApp object
@@ -140,8 +142,6 @@ BOOL CQuickFindApp::InitInstance()
 		RUNTIME_CLASS(CQuickFindRichEditDoc),
 		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
 		RUNTIME_CLASS(CQuickFindRichEditView));
-	if (!pDocTemplate)
-		return FALSE;
 	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
 	AddDocTemplate(pDocTemplate);
 
@@ -157,8 +157,6 @@ BOOL CQuickFindApp::InitInstance()
 		RUNTIME_CLASS(CQuickFindScintillaDoc),
 		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
 		RUNTIME_CLASS(CQuickFindScintillaView));
-	if (!pDocTemplate)
-		return FALSE;
 	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
 	AddDocTemplate(pDocTemplate);
 #else
@@ -167,7 +165,7 @@ BOOL CQuickFindApp::InitInstance()
 
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame;
-	if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))
+	if (!pMainFrame->LoadFrame(IDR_MAINFRAME))
 	{
 		delete pMainFrame;
 		return FALSE;

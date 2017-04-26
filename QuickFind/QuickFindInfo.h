@@ -31,16 +31,26 @@ public:
 		nMaxItems = 20;
 	}
 
+	QUICKFIND_INFO(const QUICKFIND_INFO& qfi)
+	{
+		Copy(qfi);
+	}
+
 	QUICKFIND_INFO& operator=(const QUICKFIND_INFO& rhs)
 	{
-		dwFlags = rhs.dwFlags;
-		saSearch.Copy(rhs.saSearch);
-		saReplace.Copy(rhs.saReplace);
+		Copy(rhs);
+		return *this;
+	}
+
+	void Copy(const QUICKFIND_INFO& qfi)
+	{
+		dwFlags = qfi.dwFlags;
+		saSearch.Copy(qfi.saSearch);
+		saReplace.Copy(qfi.saReplace);
 		if (saSearch.GetSize() > nMaxItems)
 			saSearch.SetSize(nMaxItems);
 		if (saReplace.GetSize() > nMaxItems)
 			saReplace.SetSize(nMaxItems);
-		return *this;
 	}
 
 	inline BOOL IsInitShowAsReplace() const

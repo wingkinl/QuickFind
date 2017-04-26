@@ -1069,7 +1069,7 @@ void CQuickFindWnd::OnMatchCase()
 	BOOL bBtnChecked = m_wndMatchCase.GetCheck() != BST_UNCHECKED;
 	if (m_info.IsMatchCase() != bBtnChecked)
 		m_wndMatchCase.SetCheck(m_info.IsMatchCase());
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
+	UpdateFindResult( NotifyOwner(QuickFindCmdOptionsChange) != 0 );
 }
 
 void CQuickFindWnd::OnMatchWord()
@@ -1081,7 +1081,7 @@ void CQuickFindWnd::OnMatchWord()
 	BOOL bBtnChecked = m_wndMatchWord.GetCheck() != BST_UNCHECKED;
 	if (m_info.IsMatchWholeWord() != bBtnChecked)
 		m_wndMatchWord.SetCheck(m_info.IsMatchWholeWord());
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
+	UpdateFindResult( NotifyOwner(QuickFindCmdOptionsChange) != 0 );
 }
 
 void CQuickFindWnd::OnUseRegEx()
@@ -1093,14 +1093,14 @@ void CQuickFindWnd::OnUseRegEx()
 	BOOL bBtnChecked = m_wndRegEx.GetCheck() != BST_UNCHECKED;
 	if (m_info.IsUseRegEx() != bBtnChecked)
 		m_wndRegEx.SetCheck(m_info.IsUseRegEx());
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdOptionsChange));
+	UpdateFindResult( NotifyOwner(QuickFindCmdOptionsChange) != 0 );
 }
 
 void CQuickFindWnd::OnSelChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
 	{
-		UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindTextChange));
+		UpdateFindResult( NotifyOwner(QuickFindCmdFindTextChange) != 0 );
 	}
 }
 
@@ -1108,13 +1108,13 @@ void CQuickFindWnd::OnEditChangeFind()
 {
 	if (m_info.IsNotifyFindTextChange())
 	{
-		UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindTextChange));
+		UpdateFindResult( NotifyOwner(QuickFindCmdFindTextChange) != 0 );
 	}
 }
 
 void CQuickFindWnd::OnSelChangeScope()
 {
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel()));
+	UpdateFindResult( NotifyOwner(QuickFindCmdScopeSelChange, (WPARAM)m_wndScope.GetCurSel()) != 0 );
 }
 
 static void _PromoteTextInComboEx(CComboBox& combo, LPCTSTR pszText, int nMaxCount)
@@ -1206,7 +1206,7 @@ void CQuickFindWnd::OnFindNext()
 	PromoteFindTextItems();
 	BOOL bWasFindPrevious = m_info.IsFindReplacePrevious();
 	m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFind));
+	UpdateFindResult( NotifyOwner(QuickFindCmdFind) != 0 );
 	if (bWasFindPrevious)
 		m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
 }
@@ -1216,7 +1216,7 @@ void CQuickFindWnd::OnFindPrevious()
 	PromoteFindTextItems();
 	BOOL bWasFindNext = m_info.IsFindReplaceNext();
 	m_info.dwFlags |= QUICKFIND_INFO::FlagsFindReplacePrevious;
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFind));
+	UpdateFindResult( NotifyOwner(QuickFindCmdFind) != 0 );
 	if (bWasFindNext)
 		m_info.dwFlags &= ~QUICKFIND_INFO::FlagsFindReplacePrevious;
 }
@@ -1224,19 +1224,19 @@ void CQuickFindWnd::OnFindPrevious()
 void CQuickFindWnd::OnFindAll()
 {
 	PromoteFindTextItems();
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdFindAll));
+	UpdateFindResult( NotifyOwner(QuickFindCmdFindAll) != 0 );
 }
 
 void CQuickFindWnd::OnReplaceNext()
 {
 	PromoteReplaceTextItems();
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdReplace));
+	UpdateFindResult( NotifyOwner(QuickFindCmdReplace) != 0 );
 }
 
 void CQuickFindWnd::OnReplaceAll()
 {
 	PromoteReplaceTextItems();
-	UpdateFindResult((BOOL)NotifyOwner(QuickFindCmdReplaceAll));
+	UpdateFindResult( NotifyOwner(QuickFindCmdReplaceAll) != 0 );
 }
 
 void CQuickFindWnd::SwitchUI(BOOL bShowAsReplace, BOOL bShowOptions)
