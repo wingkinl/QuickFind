@@ -51,6 +51,7 @@ CQuickFindApp::CQuickFindApp()
 #ifdef _ENABLE_SCINTILLA_BUILD
 	m_hSciDLL = nullptr;
 #endif // _ENABLE_SCINTILLA_BUILD
+	m_bDuringInit = true;
 }
 
 // The one and only CQuickFindApp object
@@ -150,15 +151,16 @@ BOOL CQuickFindApp::InitInstance()
 	if (m_hSciDLL == nullptr)
 	{
 		AfxMessageBox(_T("Scintilla DLL is not installed, Please download the SciTE editor and copy the SciLexer.dll into this application's directory"));
-		return FALSE;
 	}
-
-	pDocTemplate = new CMultiDocTemplate(IDR_QuickFindScintillaTYPE,
-		RUNTIME_CLASS(CQuickFindScintillaDoc),
-		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
-		RUNTIME_CLASS(CQuickFindScintillaView));
-	pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
-	AddDocTemplate(pDocTemplate);
+	else
+	{
+		pDocTemplate = new CMultiDocTemplate(IDR_QuickFindScintillaTYPE,
+			RUNTIME_CLASS(CQuickFindScintillaDoc),
+			RUNTIME_CLASS(CChildFrame), // custom MDI child frame
+			RUNTIME_CLASS(CQuickFindScintillaView));
+		pDocTemplate->SetContainerInfo(IDR_QuickFindTYPE_CNTR_IP);
+		AddDocTemplate(pDocTemplate);
+	}
 #else
 #pragma message("scintilla-based view not enabled, put scintilla's header files to scintilla folder to enable building it.")
 #endif // _ENABLE_SCINTILLA_BUILD
@@ -185,6 +187,7 @@ BOOL CQuickFindApp::InitInstance()
 	pMainFrame->ShowWindow(m_nCmdShow);
 	pMainFrame->UpdateWindow();
 
+	m_bDuringInit = false;
 	return TRUE;
 }
 
@@ -262,17 +265,18 @@ void CQuickFindApp::SaveCustomState()
 
 void CQuickFindApp::OnFileNew()
 {
-#ifdef _ENABLE_SCINTILLA_BUILD
-	for (POSITION tPos = theApp.m_pDocManager->GetFirstDocTemplatePosition(); tPos != NULL;)
+	if (m_bDuringInit)
 	{
-		CDocTemplate* ptempDocTemplate =
-			theApp.m_pDocManager->GetNextDocTemplate(tPos);
-		//this will make the view visible.
-		ptempDocTemplate->OpenDocumentFile(NULL);
+		for (POSITION tPos = theApp.m_pDocManager->GetFirstDocTemplatePosition(); tPos != NULL;)
+		{
+			CDocTemplate* ptempDocTemplate =
+				theApp.m_pDocManager->GetNextDocTemplate(tPos);
+			//this will make the view visible.
+			ptempDocTemplate->OpenDocumentFile(NULL);
+		}
 	}
-#else
-	CWinAppEx::OnFileNew();
-#endif // _ENABLE_SCINTILLA_BUILD
+	else
+		CWinAppEx::OnFileNew();
 }
 
 // CQuickFindApp message handlers
