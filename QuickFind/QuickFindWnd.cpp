@@ -444,14 +444,22 @@ BOOL CQuickFindWnd::OnInitDialog()
 CString CQuickFindWnd::GetFindString() const
 {
 	CString strText;
-	m_wndFind.GetWindowText(strText);
+	int nCurSel = m_wndFind.GetCurSel();
+	if (nCurSel >= 0)
+		m_wndFind.GetLBText(nCurSel, strText);
+	else
+		m_wndFind.GetWindowText(strText);
 	return strText;
 }
 
 CString CQuickFindWnd::GetReplaceString() const
 {
 	CString strText;
-	m_wndReplace.GetWindowText(strText);
+	int nCurSel = m_wndReplace.GetCurSel();
+	if (nCurSel >= 0)
+		m_wndReplace.GetLBText(nCurSel, strText);
+	else
+		m_wndReplace.GetWindowText(strText);
 	return strText;
 }
 
